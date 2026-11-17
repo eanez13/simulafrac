@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SimulaFrac (Edgar Añez) — Simulador de Fractura Hidráulica</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+<style>
+
+:root{--bg:#0f1216;--p1:#161b21;--p2:#1d242c;--p3:#26303a;--ln:#2e3a46;--tx:#e6ebf0;--mu:#8d9aa8;--acc:#ff8a1f;--acctx:#141414;--blue:#3fa9ff;--red:#ff4d4d;--grn:#3ddc84;--yel:#ffd23f;--pur:#b48cff;--brn:#c98a4a;--sand:#ffb347;--water:#2f7fc0;--steel:#9aa6b2;--rock:#1a1510;--zone:#3a2c1a}
+*{box-sizing:border-box}
+.palBtn{margin-left:auto;background:var(--p3);border:1px solid var(--ln);color:var(--tx);border-radius:8px;padding:6px 10px;cursor:pointer;font-weight:600;font-size:13px}
+#palPop{position:fixed;top:56px;right:14px;z-index:60;width:380px;max-height:calc(100vh - 70px);overflow:auto;max-width:calc(100vw - 28px);background:var(--p1);border:1px solid var(--ln);border-radius:12px;padding:12px;box-shadow:0 12px 40px #0009}
+#palPop.hidden{display:none}#palPop h4{margin:0 0 8px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu)}
+.palGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.palGrid button{display:flex;align-items:center;gap:8px;background:var(--p2);border:1px solid var(--ln);color:var(--tx);border-radius:9px;padding:8px;cursor:pointer;font-size:12px;font-weight:600;text-align:left}
+.palGrid button.on{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc) inset}
+.sw{display:inline-flex;border-radius:6px;overflow:hidden;border:1px solid #0006;flex:none}.sw i{width:12px;height:22px;display:block}
+.pv{display:grid;grid-template-columns:1fr auto 74px;gap:8px;align-items:center;padding:4px 0;border-bottom:1px dashed var(--ln);font-size:12.5px}.pv input[type=color]{width:38px;height:26px;border:1px solid var(--ln);border-radius:6px;background:var(--p2);padding:1px;cursor:pointer}.pv input.hx{width:74px;background:var(--p2);border:1px solid var(--ln);color:var(--tx);border-radius:6px;padding:4px;font-size:12px;font-family:ui-monospace,monospace}.pvg{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--acc);margin:10px 0 2px;font-weight:700}.palGrid button .x{margin-left:auto;opacity:.6}
+.palRow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;font-size:13px}.palRow input[type=color]{width:46px;height:30px;border:1px solid var(--ln);border-radius:6px;background:var(--p2);padding:2px;cursor:pointer}
+
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:Inter,system-ui,sans-serif;font-size:14px}
+button,input,select,textarea{font-family:inherit}
+a{color:var(--blue)}a:visited{color:var(--pur)}
+.num{font-family:Rajdhani,Inter,sans-serif;font-weight:700;letter-spacing:.02em}
+header{display:flex;align-items:center;gap:14px;padding:10px 16px;background:linear-gradient(90deg,var(--p1),var(--bg));border-bottom:1px solid var(--ln);position:sticky;top:0;z-index:30;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:8px;font-family:Rajdhani;font-size:22px;font-weight:700;letter-spacing:.04em}
+.logo i{width:26px;height:26px;border-radius:6px;background:var(--acc);display:inline-flex;align-items:center;justify-content:center;font-style:normal;color:var(--acctx);font-size:15px}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav button{background:transparent;border:1px solid transparent;color:var(--mu);padding:7px 12px;border-radius:7px;font-weight:600;cursor:pointer;font-size:13px}
+nav button.on{background:var(--p3);color:var(--tx);border-color:var(--ln)}
+main{padding:14px;max-width:1500px;margin:0 auto}
+.view{display:none}.view.on{display:block}
+.card{background:var(--p1);border:1px solid var(--ln);border-radius:10px;padding:12px}
+.card h3{margin:0 0 8px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mu);font-weight:700}
+.btn{background:var(--p3);border:1px solid var(--ln);color:var(--tx);padding:8px 12px;border-radius:7px;cursor:pointer;font-weight:600;font-size:13px}
+.btn:hover{border-color:color-mix(in srgb,var(--mu) 33%,var(--ln))}.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:var(--acctx)}
+.btn.red{background:color-mix(in srgb,var(--red) 30%,var(--bg));border-color:color-mix(in srgb,var(--red) 50%,var(--bg))}.btn.grn{background:color-mix(in srgb,var(--grn) 20%,var(--bg));border-color:color-mix(in srgb,var(--grn) 41%,var(--p1))}
+.btn.sm{padding:5px 9px;font-size:12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.muted{color:var(--mu)}
+/* simulador */
+#simGrid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:12px}
+@media(max-width:1050px){#simGrid{grid-template-columns:1fr}}
+#kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px;margin-bottom:12px}
+.kpi{background:var(--p1);border:1px solid var(--ln);border-radius:9px;padding:8px 10px;position:relative}
+.kpi .l{font-size:11px;color:var(--mu);font-weight:600;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi .v{font-family:Rajdhani;font-weight:700;font-size:26px;line-height:1.05}
+.kpi .u{font-size:12px;color:var(--mu);margin-left:3px;font-family:Inter;font-weight:500}
+.kpi .b{height:3px;background:var(--p3);border-radius:2px;margin-top:4px;overflow:hidden}.kpi .b i{display:block;height:100%;background:var(--blue)}
+.kpi.warn{border-color:color-mix(in srgb,var(--yel) 57%,var(--bg))}.kpi.alarm{border-color:var(--red);box-shadow:0 0 0 1px var(--red) inset}
+canvas{display:block;width:100%}
+#chartWrap{position:relative}#chart{height:300px}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--mu);margin-top:6px}.legend span:before{content:'';display:inline-block;width:12px;height:3px;margin-right:5px;vertical-align:middle;background:var(--c)}
+#wellCv{height:260px}
+.ctl{display:grid;grid-template-columns:auto 1fr auto;gap:6px 10px;align-items:center}
+.ctl label{font-size:12px;color:var(--mu);font-weight:600}
+input[type=range]{width:100%;accent-color:var(--acc)}
+.setv{font-family:Rajdhani;font-weight:700;font-size:18px;min-width:70px;text-align:right}
+#pumps{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.pump{border:1px solid var(--ln);border-radius:8px;padding:6px 6px 5px;background:var(--p2);cursor:pointer;text-align:center;font-size:11px;user-select:none;position:relative}
+.pump b{display:block;font-family:Rajdhani;font-size:15px}
+.pump.on{border-color:color-mix(in srgb,var(--grn) 41%,var(--p1));background:color-mix(in srgb,var(--grn) 11%,var(--bg))}.pump.issue{border-color:var(--yel);animation:blink 1s infinite}.pump.dead{opacity:.35;cursor:not-allowed;border-color:color-mix(in srgb,var(--red) 30%,var(--bg))}
+@keyframes blink{50%{box-shadow:0 0 0 2px rgba(255,210,63,.5)}}
+.pump .st{color:var(--mu);font-size:10px}
+#coach{border-left:4px solid var(--acc)}
+#coachStep{font-size:15px;font-weight:700;margin-bottom:4px}#coachWhy{color:color-mix(in srgb,var(--mu) 38%,var(--tx));font-size:13px;line-height:1.45}
+#alarm{display:none;background:color-mix(in srgb,var(--red) 16%,var(--bg));border:1px solid var(--red);color:color-mix(in srgb,var(--red) 19%,var(--tx));padding:8px 12px;border-radius:8px;font-weight:600;margin-bottom:10px}
+#alarm.on{display:block;animation:blink2 1s infinite}@keyframes blink2{50%{background:color-mix(in srgb,var(--red) 29%,var(--bg))}}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:5px 6px;border-bottom:1px solid var(--ln);text-align:right}th:first-child,td:first-child{text-align:left}
+th{color:var(--mu);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+tr.cur td{background:color-mix(in srgb,var(--sand) 10%,var(--bg));color:color-mix(in srgb,var(--sand) 43%,var(--tx))}tr.done td{color:color-mix(in srgb,var(--grn) 65%,var(--tx))}
+#log{max-height:170px;overflow:auto;font-size:12px;line-height:1.5}
+#log div{border-bottom:1px dashed var(--p3);padding:2px 0}#log .t{color:var(--mu);font-family:Rajdhani;margin-right:6px}
+#log .w{color:var(--yel)}#log .e{color:var(--red)}#log .g{color:var(--grn)}
+.badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700;background:var(--p3);color:var(--mu)}
+.badge.ok{background:color-mix(in srgb,var(--grn) 20%,var(--bg));color:color-mix(in srgb,var(--grn) 63%,var(--tx))}.badge.no{background:color-mix(in srgb,var(--red) 23%,var(--bg));color:color-mix(in srgb,var(--red) 39%,var(--tx))}
+.right>.card{margin-bottom:12px}
+.overlay{position:fixed;inset:0;background:rgba(5,8,11,.82);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px;overflow:auto}
+.overlay.hidden{display:none}
+.modal{background:var(--p1);border:1px solid var(--ln);border-radius:14px;max-width:760px;width:100%;padding:22px;max-height:100%;overflow:auto}
+.modal h2{margin:0 0 6px;font-family:Rajdhani;font-size:30px}
+.scn{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:14px 0}
+.scn .o{border:1px solid var(--ln);border-radius:10px;padding:12px;cursor:pointer;background:var(--p2)}
+.scn .o.sel{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc) inset}
+.pumpPick{border:1px solid var(--ln);border-radius:10px;padding:10px 12px;margin:0 0 12px;background:var(--p2)}.pumpPick .row{margin:6px 0;flex-wrap:wrap;gap:8px}.pumpPick select{max-width:100%}
+.specbox{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;margin-top:6px}.specbox div{background:var(--bg);border:1px solid var(--ln);border-radius:8px;padding:6px 8px}.specbox span{display:block;font-size:11px;color:var(--mu)}.specbox b{font-size:15px}
+.scn .o b{display:block;font-size:15px;margin-bottom:4px}.scn .o small{color:var(--mu);line-height:1.4;display:block}
+.tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;margin-top:6px;letter-spacing:.06em}
+.seg{display:inline-flex;border:1px solid var(--ln);border-radius:8px;overflow:hidden}.seg button{background:transparent;border:0;color:var(--mu);padding:6px 10px;cursor:pointer;font-weight:600}.seg button.on{background:var(--p3);color:var(--tx)}
+.score{display:grid;grid-template-columns:1fr auto;gap:4px 12px;margin:10px 0}.score div:nth-child(even){text-align:right;font-family:Rajdhani;font-weight:700;font-size:16px}
+.grade{font-family:Rajdhani;font-size:64px;font-weight:700;line-height:1}
+/* aprender */
+#learnGrid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:12px}
+@media(max-width:900px){#learnGrid{grid-template-columns:1fr}}
+#spread{width:100%;height:auto;background:var(--bg);border-radius:10px;border:1px solid var(--ln)}
+#spread .eq{cursor:pointer}#spread .eq:hover rect,#spread .eq.sel rect{stroke:var(--acc);stroke-width:2.5}
+#spread text{font-family:Inter;font-size:11px;fill:color-mix(in srgb,var(--mu) 23%,var(--tx));pointer-events:none}
+.flow{stroke-dasharray:8 6;animation:dash 1s linear infinite}@keyframes dash{to{stroke-dashoffset:-14}}
+#eqInfo h2{margin:0 0 4px;font-family:Rajdhani;font-size:26px}#eqInfo h4{margin:12px 0 4px;color:var(--acc);font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+#eqInfo ul{margin:4px 0;padding-left:18px;line-height:1.5;color:color-mix(in srgb,var(--mu) 24%,var(--tx))}
+.concepts{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:12px}
+.concepts .card p{margin:4px 0;color:color-mix(in srgb,var(--mu) 31%,var(--tx));line-height:1.5;font-size:13px}
+/* calculadoras */
+#calcGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.calc .f{font-family:Rajdhani;font-size:17px;color:var(--yel);margin:2px 0 8px}
+.calc .in{display:grid;grid-template-columns:1fr 110px;gap:6px;align-items:center;margin-bottom:6px;font-size:13px}
+.calc input{background:var(--p2);border:1px solid var(--ln);color:var(--tx);padding:6px 8px;border-radius:6px;font-family:Rajdhani;font-size:16px;width:100%}
+.calc .res{margin-top:8px;padding:8px 10px;background:color-mix(in srgb,var(--grn) 8%,var(--bg));border:1px solid color-mix(in srgb,var(--grn) 41%,var(--p1));border-radius:7px;font-family:Rajdhani;font-size:20px;font-weight:700}
+.calc .ex{font-size:12px;color:var(--mu);margin-top:6px;line-height:1.45}
+/* quiz */
+#quiz .q{margin-bottom:14px}#quiz .q p{font-weight:600;margin:0 0 8px;line-height:1.4}
+#quiz .opt{display:block;width:100%;text-align:left;margin:5px 0;background:var(--p2);border:1px solid var(--ln);color:var(--tx);padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px}
+#quiz .opt.ok{border-color:var(--grn);background:color-mix(in srgb,var(--grn) 11%,var(--bg))}#quiz .opt.bad{border-color:var(--red);background:color-mix(in srgb,var(--red) 12%,var(--bg))}
+#quiz .exp{font-size:13px;color:color-mix(in srgb,var(--mu) 31%,var(--tx));background:var(--p2);border-left:3px solid var(--acc);padding:8px 10px;border-radius:6px;margin-top:6px;display:none;line-height:1.45}
+.speed button{min-width:42px}
+.hint{font-size:12px;color:var(--mu);line-height:1.4}
+#crit{border-left:4px solid var(--red)}
+.cr{display:flex;gap:8px;align-items:flex-start;padding:4px 0;font-size:12.5px;line-height:1.35;border-bottom:1px dashed var(--p3)}
+.cr i{font-style:normal;width:18px;flex:none;text-align:center}.cr.done{color:color-mix(in srgb,var(--grn) 63%,var(--tx))}.cr.now{color:color-mix(in srgb,var(--sand) 43%,var(--tx));font-weight:600}.cr.lock{color:color-mix(in srgb,var(--ln) 31%,var(--mu))}.cr.fail{color:color-mix(in srgb,var(--red) 62%,var(--tx));font-weight:600}
+.ck{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border:1px solid var(--ln);border-radius:8px;margin:6px 0;background:var(--p2);cursor:pointer}
+.ck input{margin-top:3px;width:18px;height:18px;accent-color:var(--acc);flex:none}.ck b{display:block;font-size:13.5px}.ck small{color:var(--mu);line-height:1.4}
+.ckin{display:grid;grid-template-columns:1fr 130px;gap:8px;align-items:center;padding:9px 10px;border:1px solid var(--ln);border-radius:8px;margin:6px 0;background:var(--p2)}
+.ckin input{background:var(--p1);border:1px solid var(--ln);color:var(--tx);padding:7px;border-radius:6px;font-family:Rajdhani;font-size:17px;width:100%}
+#ckErr{color:color-mix(in srgb,var(--red) 62%,var(--tx));font-weight:600;margin-top:8px;min-height:18px}
+@media(max-width:700px){header{position:static;padding:8px 10px}header>.muted{display:none}nav button{padding:6px 8px;font-size:12px}main{padding:10px}.right{order:-1}#simGrid>div:first-child{order:0}#chart{height:240px}#wellCv{height:200px}.kpi .v{font-size:22px}}
+
+/* ---- SimulaFrac ---- */
+.logo small{font-family:Inter;font-size:11px;font-weight:600;color:var(--mu);letter-spacing:.04em;display:block;line-height:1;margin-top:-2px}
+.logo span{line-height:1}
+nav button{font-size:12.5px}
+.hero{background:linear-gradient(120deg,var(--p2),var(--bg) 60%);border:1px solid var(--ln);border-radius:14px;padding:26px 24px;margin-bottom:14px;position:relative;overflow:hidden}
+.hero h1{font-family:Rajdhani;font-size:clamp(34px,6vw,54px);margin:0;line-height:1}
+.hero h1 b{color:var(--acc)}
+.hero .by{color:var(--mu);font-weight:600;letter-spacing:.08em;margin-top:4px}
+.hero p{max-width:760px;color:color-mix(in srgb,var(--mu) 31%,var(--tx));line-height:1.55;font-size:15px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.stepc{display:flex;gap:12px;align-items:flex-start}
+.stepc .n{width:30px;height:30px;border-radius:50%;background:var(--acc);color:var(--acctx);display:flex;align-items:center;justify-content:center;font-weight:800;flex:none}
+.stepc p{margin:2px 0 8px;color:color-mix(in srgb,var(--mu) 31%,var(--tx));line-height:1.45;font-size:13px}
+.ref li{margin:4px 0;line-height:1.45;color:color-mix(in srgb,var(--mu) 24%,var(--tx))}
+.src{font-size:12px;color:var(--mu);margin-top:8px;line-height:1.5}.src a{color:color-mix(in srgb,var(--blue) 63%,var(--tx))}
+/* guía */
+.gstep{border:1px solid var(--ln);border-radius:12px;background:var(--p1);margin-bottom:10px;overflow:hidden}
+.gstep summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;gap:10px;align-items:center;font-weight:700;font-size:15px}
+.gstep summary::-webkit-details-marker{display:none}
+.gstep summary .n{width:28px;height:28px;border-radius:50%;background:var(--p3);display:flex;align-items:center;justify-content:center;font-size:13px;flex:none}
+.gstep[open] summary .n{background:var(--acc);color:var(--acctx)}
+.gbody{padding:0 16px 14px 52px;color:color-mix(in srgb,var(--mu) 23%,var(--tx));line-height:1.5;font-size:13.5px}
+.gbody h5{margin:10px 0 4px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--acc)}
+.gbody ul{margin:2px 0;padding-left:18px}
+.gbody table td,.gbody table th{text-align:left;font-size:12.5px}
+.ind{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.08em;background:color-mix(in srgb,var(--red) 23%,var(--bg));color:color-mix(in srgb,var(--red) 39%,var(--tx));border-radius:4px;padding:2px 6px;margin-left:6px}
+/* stepper */
+#stepper{border-left:4px solid var(--acc)}
+.st{display:flex;gap:8px;align-items:flex-start;padding:5px 0;font-size:12.5px;border-bottom:1px dashed var(--p3);line-height:1.35}
+.st i{font-style:normal;width:18px;flex:none;text-align:center}.st.done{color:color-mix(in srgb,var(--grn) 63%,var(--tx))}.st.lock{color:color-mix(in srgb,var(--ln) 31%,var(--mu))}.st.fail{color:color-mix(in srgb,var(--red) 62%,var(--tx));font-weight:600}
+.st.now{color:var(--tx);font-weight:700}
+.stcur{background:var(--p2);border:1px solid color-mix(in srgb,var(--sand) 25%,var(--bg));border-radius:10px;padding:10px 12px;margin:6px 0 8px}
+.stcur .w{color:color-mix(in srgb,var(--mu) 31%,var(--tx));font-size:13px;line-height:1.45;margin:4px 0}
+.stcur ol{margin:6px 0;padding-left:20px;font-size:13px;line-height:1.5;color:var(--tx)}
+.obs{width:100%;margin-top:6px}.obs td{font-size:12.5px;padding:4px 6px}.obs td:last-child{text-align:right;font-family:Rajdhani;font-weight:700;font-size:15px}
+.obs tr.ok td:last-child{color:color-mix(in srgb,var(--grn) 63%,var(--tx))}.obs tr.warn td:last-child{color:var(--yel)}.obs tr.bad td:last-child{color:var(--red)}
+.tipbox{background:color-mix(in srgb,var(--red) 16%,var(--bg));border:1px solid var(--red);color:color-mix(in srgb,var(--red) 19%,var(--tx));border-radius:8px;padding:8px 10px;font-size:12.5px;margin-top:6px;line-height:1.4}
+.glow{animation:glow 1.1s infinite;position:relative;z-index:2}@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(255,138,31,.0)}50%{box-shadow:0 0 0 3px rgba(255,138,31,.85)}}
+.kpi .m{font-size:11px;color:color-mix(in srgb,var(--blue) 63%,var(--tx));font-family:Inter;margin-top:1px;min-height:13px}
+/* bombas */
+.pump{min-height:58px}.pump .wr{position:absolute;top:3px;right:5px;font-size:11px}
+.pump.maint{border-color:var(--blue);background:color-mix(in srgb,var(--blue) 10%,var(--bg))}
+.pump .hb{height:3px;background:var(--p3);border-radius:2px;margin-top:3px;overflow:hidden}.pump .hb i{display:block;height:100%}
+#toast{position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:60;max-width:min(680px,94vw);display:flex;flex-direction:column;gap:8px}
+#toast div{background:color-mix(in srgb,var(--yel) 10%,var(--bg));border:1px solid var(--yel);color:color-mix(in srgb,var(--yel) 37%,var(--tx));border-radius:10px;padding:10px 14px;font-size:13.5px;line-height:1.45;box-shadow:0 8px 30px rgba(0,0,0,.5);cursor:pointer}
+#toast div b{color:var(--tx)}
+.pm h2{margin:0;font-family:Rajdhani;font-size:28px}
+.diag{background:color-mix(in srgb,var(--red) 12%,var(--bg));border:1px solid color-mix(in srgb,var(--red) 50%,var(--bg));border-radius:10px;padding:10px 12px;margin:10px 0;line-height:1.5}
+.diag.ok{background:color-mix(in srgb,var(--grn) 11%,var(--bg));border-color:color-mix(in srgb,var(--grn) 41%,var(--p1))}
+.comp{display:grid;grid-template-columns:1fr 120px 60px;gap:6px 10px;align-items:center;font-size:12.5px;margin:8px 0}
+.comp .bar{height:6px;background:var(--p3);border-radius:3px;overflow:hidden}.comp .bar i{display:block;height:100%}
+.rep label .th{width:34px;height:26px;flex:none;border-radius:5px;background:var(--bg);display:flex;align-items:center;justify-content:center}.rep label .th svg{width:32px;height:24px}
+.prevw{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:8px 0}.prevw .pc{background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:8px;text-align:center}.prevw .pc svg{width:100%;height:96px}.prevw .pc b{display:block;font-size:12.5px;margin-top:4px}.prevw .pc small{color:var(--mu);font-size:11.5px;line-height:1.3;display:block}
+.prevw .pc.must{border-color:var(--red)}.prevw .pc.soon{border-color:var(--yel)}
+.recbox{background:color-mix(in srgb,var(--acc) 8%,var(--bg));border:1px solid var(--acc);border-radius:10px;padding:10px 12px;margin:10px 0}
+.condb{font-family:Rajdhani;font-weight:700;font-size:20px}
+.pump .pc100{position:absolute;right:6px;bottom:7px;font-size:10px;color:var(--mu)}
+.rep{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:6px;margin:8px 0}
+.rep label{display:flex;gap:8px;align-items:center;background:var(--p2);border:1px solid var(--ln);border-radius:8px;padding:7px 9px;font-size:12.5px;cursor:pointer}
+.rep label small{color:var(--mu);margin-left:auto;white-space:nowrap}
+.rep input{accent-color:var(--acc);width:16px;height:16px}
+.loto{display:flex;gap:10px;align-items:flex-start;background:color-mix(in srgb,var(--sand) 10%,var(--bg));border:1px solid color-mix(in srgb,var(--yel) 37%,var(--bg));border-radius:8px;padding:9px 10px;margin:8px 0;font-size:13px;line-height:1.4}
+.loto input{width:18px;height:18px;accent-color:var(--acc);margin-top:2px}
+/* plantillas */
+.tform{display:grid;grid-template-columns:1fr;gap:6px}
+.tf{display:grid;grid-template-columns:minmax(150px,1.1fr) 120px minmax(160px,1.6fr);gap:8px;align-items:center;padding:7px 8px;border-bottom:1px solid var(--ln)}
+.tf b{font-size:13px}.tf .u{font-size:11px;color:var(--mu)}
+.tf input,.tf select,.tin{background:var(--p2);border:1px solid var(--ln);color:var(--tx);padding:6px 8px;border-radius:6px;font-family:Rajdhani;font-size:16px;width:100%}
+.tf .s{font-size:12px;color:color-mix(in srgb,var(--mu) 74%,var(--tx));line-height:1.35}.tf .s b{color:color-mix(in srgb,var(--mu) 17%,var(--tx));font-size:12px}
+.tf .mt{font-size:11px;color:color-mix(in srgb,var(--blue) 63%,var(--tx))}
+@media(max-width:760px){.tf{grid-template-columns:1fr 110px}.tf .s{grid-column:1/-1}}
+.sumg{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin:10px 0}
+.sumg div{background:var(--p2);border:1px solid var(--ln);border-radius:8px;padding:8px 10px}.sumg span{display:block;font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.05em}.sumg b{font-family:Rajdhani;font-size:20px}
+.warnbox{background:color-mix(in srgb,var(--yel) 10%,var(--bg));border:1px solid color-mix(in srgb,var(--yel) 48%,var(--bg));color:color-mix(in srgb,var(--yel) 46%,var(--tx));border-radius:8px;padding:8px 10px;margin:6px 0;font-size:13px}
+textarea.out{width:100%;min-height:220px;background:var(--bg);border:1px solid var(--ln);color:color-mix(in srgb,var(--mu) 14%,var(--tx));font-family:ui-monospace,Menlo,monospace;font-size:12px;padding:10px;border-radius:8px}
+.subtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.subtabs button{background:var(--p2);border:1px solid var(--ln);color:var(--mu);padding:7px 12px;border-radius:7px;cursor:pointer;font-weight:600;font-size:12.5px}
+.subtabs button.on{color:var(--tx);border-color:var(--acc)}
+.tpane{display:none}.tpane.on{display:block}
+#pumpSvg{width:100%;height:auto;background:var(--bg);border-radius:10px;border:1px solid var(--ln)}
+#pumpSvg .pp{cursor:pointer}#pumpSvg .pp:hover>*,#pumpSvg .pp.sel>*{stroke:var(--acc);stroke-width:2.5}
+#pumpSvg text{font-family:Inter;font-size:11px;fill:color-mix(in srgb,var(--mu) 23%,var(--tx));pointer-events:none}
+.ktab td{vertical-align:top;line-height:1.4}
+.ktab td,.ktab th,.gbody td,.gbody th{text-align:left!important}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><i>⛽</i><span>SIMULAFRAC<small>por Edgar Añez</small></span></div>
+  <button class="palBtn" id="palBtn" title="Cambiar colores de la app">🎨 Colores</button>
+  <nav id="tabs">
+    <button data-v="home" class="on">Inicio</button>
+    <button data-v="learn">Aprender el set</button>
+    <button data-v="guide">Guía paso a paso</button>
+    <button data-v="sim">Simulador</button>
+    <button data-v="maint">Bombas y mantenimiento</button>
+    <button data-v="tpl">Plantillas</button>
+    <button data-v="calc">Calculadoras</button>
+    <button data-v="quiz">Evaluación</button>
+  </nav>
+</header>
+<main>
+
+<!-- ================= INICIO ================= -->
+<section id="v-home" class="view on">
+  <div class="hero">
+    <h1>Simula<b>Frac</b></h1>
+    <div class="by">EDGAR AÑEZ · SIMULADOR DE FRACTURA HIDRÁULICA</div>
+    <p>Aprende una etapa de fractura de principio a fin: el set de equipos, el procedimiento paso a paso, qué valores mirar en la cabina de datos, cómo reaccionar ante un arenamiento y qué cambiar exactamente cuando una bomba necesita mantenimiento. Incluye escenarios con valores de referencia de Vaca Muerta y plantillas para cargar los datos de tu propio pozo.</p>
+    <div class="row"><button class="btn pri" data-go="sim">▶ Empezar a simular</button><button class="btn" data-go="guide">📘 Ver la guía paso a paso</button><button class="btn" data-go="tpl">📝 Cargar datos de mi pozo</button></div>
+  </div>
+  <div class="card" style="margin-bottom:12px"><h3>Cómo usar SimulaFrac cada vez</h3><div class="grid3" id="howto"></div></div>
+  <div class="grid3">
+    <div class="card"><h3>Vaca Muerta en números (referencia)</h3><ul class="ref" id="vmRef"></ul>
+      <div class="src">Fuentes: <a href="https://petrotecnia.com.ar/425/46-49.pdf">Petrotecnia 4-2025</a> · <a href="https://mase.lmneuquen.com/fractura/fracturas-la-sintonia-fina-la-produccion-n1010053/amp">LM Neuquén</a> · <a href="https://jornadas.iapg.org.ar/GP/presentaciones/PresentacionesPETROLEO/14.00.pdf">IAPG — presentación de YPF</a>. Las presiones y los caudales son rangos habituales de campo: cada pozo tiene su propio programa.</div></div>
+    <div class="card"><h3>Escenarios incluidos</h3><div id="scnHome"></div></div>
+    <div class="card"><h3>Tus últimas etapas</h3><div id="histHome" class="hint">Todavía no simulaste ninguna etapa.</div></div>
+  </div>
+</section>
+
+<!-- ================= APRENDER ================= -->
+<section id="v-learn" class="view">
+  <div id="learnGrid">
+    <div class="card">
+      <h3>Layout de un set de fractura — toca cada equipo</h3>
+      <svg id="spread" viewBox="0 0 900 520"></svg>
+      <div class="hint" style="margin-top:6px">Las flechas naranjas son el lado de baja presión (fluido y arena hacia las bombas). Las rojas, el lado de alta presión (de las bombas al pozo).</div>
+    </div>
+    <div class="card" id="eqInfo"></div>
+  </div>
+  <div class="concepts" id="concepts"></div>
+</section>
+
+<!-- ================= GUÍA ================= -->
+<section id="v-guide" class="view"><div style="max-width:980px;margin:0 auto">
+  <div class="card" style="margin-bottom:12px"><h3>Cómo se empieza</h3><div id="guideIntro" style="line-height:1.55;color:color-mix(in srgb,var(--mu) 23%,var(--tx))"></div></div>
+  <div id="guideSteps"></div>
+</div></section>
+
+<!-- ================= SIMULADOR ================= -->
+<section id="v-sim" class="view">
+  <div id="alarm"></div>
+  <div class="row" style="margin-bottom:10px;justify-content:space-between">
+    <div class="row"><b id="scnName">—</b><span class="badge" id="phaseBadge">SIN INICIAR</span><span class="muted num" id="simClock">00:00:00</span></div>
+    <div class="row">
+      <label class="row hint" style="gap:4px"><input type="checkbox" id="metric"> Ver también en métrico</label>
+      <span class="muted" style="font-size:12px">Velocidad</span>
+      <div class="seg speed" id="speed"><button data-s="0">⏸</button><button data-s="15">x15</button><button data-s="30" class="on">x30</button><button data-s="60">x60</button><button data-s="120">x120</button></div>
+      <button class="btn sm" id="btnNew">Nuevo escenario</button>
+    </div>
+  </div>
+  <div id="kpis"></div>
+  <div id="simGrid">
+    <div>
+      <div class="card" style="margin-bottom:12px"><h3>Gráfico de tratamiento (cabina de datos)</h3>
+        <div id="chartWrap"><canvas id="chart"></canvas></div>
+        <div class="legend"><span style="--c:var(--red)">Presión de superficie (STP)</span><span style="--c:var(--pur)">Presión de fondo (BHP)</span><span style="--c:var(--blue)">Caudal (bpm)</span><span style="--c:var(--sand)">ppa superficie</span><span style="--c:var(--brn)">ppa en fondo</span><span style="--c:var(--yel)">Kickout</span></div>
+      </div>
+      <div class="card" style="margin-bottom:12px"><h3>Pozo y fractura (vista lateral)</h3><canvas id="wellCv"></canvas>
+        <div class="hint">La lechada viaja por el casing: lo que mezclas en superficie tarda <b id="lagTxt">—</b> bbl en llegar a los punzados. Azul: fluido limpio · Naranja: arena (más oscuro, más ppa) · Violeta: ácido.</div></div>
+      <div class="card" id="schedCard"><h3>Programa de bombeo (diseño vs. real)</h3><table id="sched"></table></div>
+    </div>
+    <div class="right">
+      <details class="card" id="planCard" open style="margin-bottom:12px"><summary style="cursor:pointer;font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--acc)">🎯 Plan para una etapa efectiva</summary><div id="planBody" class="muted" style="margin-top:6px">Empieza una etapa para ver el plan con los valores de tu pozo.</div></details>
+      <div class="card" id="stepper"><h3>Paso a paso</h3><div id="stepCur"></div><div id="stepList"></div></div>
+      <div class="card"><h3>Pozo y seguridad</h3>
+        <div class="row">
+          <button class="btn" id="btnCheck">📋 Lista pre-operativa</button>
+          <button class="btn" id="btnTest">🔧 Prueba de presión (baja + alta)</button>
+          <button class="btn" id="btnRepair" style="display:none">Despresurizar y reparar</button>
+          <button class="btn" id="btnValve">Abrir válvula maestra</button>
+          <button class="btn" id="btnAcid">Bombear ácido 15% (24 bbl)</button>
+        </div>
+      </div>
+      <div class="card"><h3>Control de bombeo</h3>
+        <div class="ctl">
+          <label>Caudal</label><input type="range" id="qSet" min="0" max="110" step="1" value="0"><span class="setv" id="qSetV">0 bpm</span>
+          <label>Arena</label><input type="range" id="ppaSet" min="0" max="4" step="0.25" value="0"><span class="setv" id="ppaSetV">0.00 ppa</span>
+          <label>Red. fricción</label><select id="frSel" class="btn sm"><option value="0">0 gpt (sin FR)</option><option value="0.5">0.5 gpt</option><option value="1" selected>1.0 gpt</option><option value="1.5">1.5 gpt</option></select><span class="setv" id="frV" style="font-size:13px"></span>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn sm" id="qm">−5 bpm</button><button class="btn sm" id="qp">+5 bpm</button>
+          <button class="btn sm" id="pm">−0.25 ppa</button><button class="btn sm" id="pp">+0.25 ppa</button>
+          <label class="row hint" style="gap:4px"><input type="checkbox" id="autoSand" checked> Arena automática según programa</label>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn" id="btnFlush">Cortar arena y desplazar</button>
+          <button class="btn red" id="btnStop">Parar bombas</button>
+          <button class="btn grn" id="btnEnd" disabled>Finalizar etapa</button>
+        </div>
+      </div>
+      <div class="card" id="pumpsCard"><h3>Bombas de fractura <span class="muted" id="hhpTxt" style="text-transform:none;letter-spacing:0;font-weight:500"></span></h3>
+        <div id="pumps"></div>
+        <div class="row" style="margin-top:8px"><button class="btn sm grn" id="btnFleet">🔧 Revisión de flota</button><button class="btn sm" id="allOn">Poner disponibles en línea</button><button class="btn sm" id="allOff">Sacar todas</button></div>
+        <div class="hint" style="margin-top:6px">Toca una bomba para ver sus componentes, ponerla en línea o abrir la orden de mantenimiento. 🔧 = mantenimiento recomendado · ⚠ = falla activa.</div>
+      </div>
+      <div class="card"><h3>Registro de eventos</h3><div id="log"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= BOMBAS Y MANTENIMIENTO ================= -->
+<section id="v-maint" class="view">
+  <div id="learnGrid2" style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:12px">
+    <div class="card"><h3>Bomba de fractura quintuplex — toca cada componente</h3><svg id="pumpSvg" viewBox="0 0 900 420"></svg></div>
+    <div class="card" id="partInfo"></div>
+  </div>
+  <div class="card" style="margin-top:12px"><h3>Modelos de bomba de fractura — catálogo y calculadora</h3>
+    <div class="hint" style="margin-bottom:8px">Datos de ficha técnica (BHP, carrera, rod load, rpm). El caudal y la presión dependen del <b>émbolo</b> instalado: <b>P máx = rod load ÷ área del émbolo</b> · <b>gal/rev = cilindros × área × carrera ÷ 231</b> · <b>bpm = gal/rev × rpm ÷ 42</b> · <b>HHP útil = 90% de la BHP</b>.</div>
+    <div style="overflow:auto"><table class="ktab" id="pumpCat"></table></div>
+    <div class="row" style="margin:12px 0 6px;flex-wrap:wrap;gap:8px"><b>Calculadora:</b><select id="cPm" class="btn sm"></select><span class="hint">Émbolo</span><select id="cPl" class="btn sm"></select><span class="hint">Presión de trabajo (psi)</span><input id="cP" type="number" value="9500" class="tin" style="width:90px"><span class="hint">Caudal total (bpm)</span><input id="cQ" type="number" value="85" class="tin" style="width:70px"></div>
+    <div id="cOut"></div>
+    <div class="hint" style="margin-top:6px">Valores orientativos de catálogos públicos. Antes de operar, usa la ficha y el manual de tu bomba (los límites cambian según el fluid end y la versión).</div></div>
+  <div class="card" style="margin-top:12px"><h3>Diagnóstico: síntoma → falla → qué cambiar exactamente</h3><div style="overflow:auto"><table class="ktab" id="failTab"></table></div></div>
+  <div class="grid3" style="margin-top:12px">
+    <div class="card"><h3>Vida útil de referencia y plan preventivo</h3><table class="ktab" id="lifeTab"></table><div class="hint" style="margin-top:6px">Valores orientativos: dependen del fabricante, la presión, la malla de arena y la calidad del agua. Usa los de tu flota.</div></div>
+    <div class="card"><h3>Procedimiento seguro antes de intervenir (LOTO)</h3><ol id="lotoList" style="line-height:1.55;color:color-mix(in srgb,var(--mu) 24%,var(--tx));padding-left:20px;margin:4px 0"></ol></div>
+    <div class="card"><h3>Ajustes del simulador</h3>
+      <label class="loto"><input type="checkbox" id="optDiag"><span><b>Modo diagnóstico avanzado</b><br>La alarma muestra solo los síntomas y tú decides qué cambiar. Desactivado: el simulador te dice exactamente qué componente falló.</span></label>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PLANTILLAS ================= -->
+<section id="v-tpl" class="view">
+  <div class="subtabs" id="tplTabs">
+    <button data-p="t1" class="on">1 · Datos del pozo y la etapa</button>
+    <button data-p="t2">2 · Lista pre-operativa</button>
+    <button data-p="t3">3 · Hoja de seguimiento de etapa</button>
+    <button data-p="t4">4 · Orden de mantenimiento</button>
+  </div>
+  <div class="tpane on" id="t1">
+    <div class="card" style="margin-bottom:12px"><h3>Plantilla de datos de entrada — qué valor necesitas y de dónde sacarlo</h3>
+      <div class="hint" style="margin-bottom:8px">Completa con los datos del programa de fractura de tu pozo. Cada campo te dice de qué documento sale. Al guardar se crea un escenario propio en el simulador.</div>
+      <div class="row" style="margin-bottom:8px"><button class="btn sm" id="exOil">Cargar ejemplo VM petróleo</button><button class="btn sm" id="exGas">Cargar ejemplo VM gas</button><button class="btn sm" id="exSchool">Cargar pozo escuela</button></div>
+      <div class="tform" id="tplForm"></div>
+      <div class="tf" style="margin-top:6px"><span><b>Modelo de bomba y émbolo</b><br><span class="u">flota</span></span><span><select id="tPm" class="btn sm" style="max-width:100%"></select> <select id="tPl" class="btn sm"></select><div id="tSpec" class="hint"></div></span><span class="s"><b>De dónde sale:</b> Placa / ficha técnica de la bomba y registro de fluid ends de taller (diámetro de émbolo instalado). La presión máxima = rod load ÷ área del émbolo.</span></div>
+      <h3 style="margin-top:14px">Programa de bombeo (fuente: programa de fractura — «pump schedule»)</h3>
+      <table id="tplSched"></table><button class="btn sm" id="addRow" style="margin-top:6px">+ Agregar paso de arena</button>
+    </div>
+    <div class="card" style="margin-bottom:12px"><h3>Resultado del pre-cálculo</h3><div class="sumg" id="tplSum"></div><div id="tplWarn"></div>
+      <div class="row" style="margin-top:8px"><button class="btn pri" id="tplSave">💾 Guardar y simular este pozo</button><button class="btn" id="tplCopy">📋 Copiar plantilla como texto</button><span class="hint" id="tplMsg"></span></div>
+      <div id="myScn" style="margin-top:10px"></div></div>
+  </div>
+  <div class="tpane" id="t2"><div class="card"><h3>Lista pre-operativa (para usar en campo o en el simulador)</h3><textarea class="out" id="out2" readonly></textarea><div class="row" style="margin-top:8px"><button class="btn" data-copy="out2">📋 Copiar</button></div></div></div>
+  <div class="tpane" id="t3"><div class="card"><h3>Hoja de seguimiento de etapa</h3><div class="hint" style="margin-bottom:6px">Se completa sola con tu última etapa simulada. Úsala como modelo de lo que se registra en cada etapa real.</div><textarea class="out" id="out3" readonly></textarea><div class="row" style="margin-top:8px"><button class="btn" data-copy="out3">📋 Copiar</button><select id="repSel" class="btn sm"></select></div></div></div>
+  <div class="tpane" id="t4"><div class="card"><h3>Orden de mantenimiento de bomba</h3><div class="hint" style="margin-bottom:6px">Se completa con las órdenes que ejecutaste en el simulador. Si no hay ninguna, verás el formato en blanco.</div><textarea class="out" id="out4" readonly></textarea><div class="row" style="margin-top:8px"><button class="btn" data-copy="out4">📋 Copiar</button></div></div></div>
+</section>
+
+<!-- ================= CALCULADORAS ================= -->
+<section id="v-calc" class="view"><div id="calcGrid"></div></section>
+<!-- ================= EVALUACIÓN ================= -->
+<section id="v-quiz" class="view"><div class="card" id="quiz" style="max-width:860px;margin:0 auto"></div></section>
+</main>
+
+<div id="toast"></div>
+<div id="palPop" class="hidden"><h4>Temas</h4><div class="palGrid" id="palGrid"></div>
+  <h4 style="margin-top:12px">Todos los colores (toca cualquiera para cambiarlo)</h4><div id="palVars"></div>
+  <div class="palRow"><input id="palName" class="tin" placeholder="Nombre de tu paleta" style="flex:1;min-width:0"><button class="btn sm" id="palSave">Guardar como tema</button></div>
+  <div class="palRow"><button class="btn sm" id="palReset">Restablecer tema</button><button class="btn sm pri" id="palClose">Listo</button></div></div>
+<div class="overlay hidden" id="ovStart"><div class="modal">
+  <h2>Elegir escenario</h2>
+  <div class="muted">Cada escenario es una etapa de fractura. Arranca por el pozo escuela si es tu primera vez.</div>
+  <div class="scn" id="scnList"></div>
+  <div class="pumpPick"><b>Bomba de la flota</b>
+    <div class="row"><select id="stPm" class="btn sm"></select><span class="hint">Émbolo:</span><select id="stPl" class="btn sm"></select></div>
+    <div id="stSpec" class="hint"></div></div>
+  <div class="row" style="justify-content:space-between">
+    <label class="row hint"><input type="checkbox" id="optFail" checked> Desgaste y fallas de bombas</label>
+    <button class="btn pri" id="btnGo">Comenzar etapa</button>
+  </div>
+</div></div>
+<div class="overlay hidden" id="ovFleet"><div class="modal" id="fleetBody" style="max-width:980px"></div></div>
+<div class="overlay hidden" id="ovCheck"><div class="modal" id="checkBody"></div></div>
+<div class="overlay hidden" id="ovPump"><div class="modal pm" id="pumpBody"></div></div>
+<div class="overlay hidden" id="ovEnd"><div class="modal" id="endBody"></div></div>
+
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>v<a?a:v>b?b:v,rnd=(a,b)=>a+Math.random()*(b-a);
+const fmt=(v,d=0)=>Number(v).toLocaleString('es-AR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const ft2m=f=>f*0.3048;
+/* colores: el canvas no entiende var(--x); se resuelven con los valores actuales */
+let CV={};function cvRefresh(){CV={};}
+function cvGet(k){if(!(k in CV))CV[k]=getComputedStyle(document.documentElement).getPropertyValue('--'+k).trim()||'#888';return CV[k];}
+function R(v){return typeof v==='string'&&v.includes('var(')?v.replace(/var\(--([\w]+)\)/g,(m,k)=>cvGet(k)):v;}
+(()=>{const P=CanvasRenderingContext2D.prototype;for(const prop of ['fillStyle','strokeStyle','shadowColor']){const d=Object.getOwnPropertyDescriptor(P,prop);Object.defineProperty(P,prop,{get(){return d.get.call(this);},set(v){d.set.call(this,R(v));},configurable:true});}
+  const a=CanvasGradient.prototype.addColorStop;CanvasGradient.prototype.addColorStop=function(o,c){return a.call(this,o,R(c));};})();
+const store={get(k,d){try{const v=localStorage.getItem('sf_'+k);return v===null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem('sf_'+k,JSON.stringify(v));}catch(e){}}};
+async function copyText(t,btn){try{await navigator.clipboard.writeText(t);if(btn){const o=btn.textContent;btn.textContent='✔ Copiado';setTimeout(()=>btn.textContent=o,1500);}}catch(e){if(btn)btn.textContent='Selecciona y copia (Ctrl+C)';}}
+const MET={psi:[.0689476,'bar',0],bbl:[.158987,'m³',1],bpm:[.158987,'m³/min',2],lb:[.000453592,'t',1],ft:[.3048,'m',0],ppa:[119.826,'kg/m³',0],HHP:[.7457,'kW',0]};
+const met=(v,u,d)=>{const m=MET[u];return m?fmt(v*m[0],d??m[2])+' '+m[1]:'';};
+
+/* ================= TABS ================= */
+function go(v){document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x.dataset.v===v));document.querySelectorAll('.view').forEach(x=>x.classList.toggle('on',x.id==='v-'+v));
+  if(v==='sim'&&!S)openStart();if(v==='tpl')refreshTpl();if(v==='home')drawHome();window.scrollTo(0,0);if(S)updateUI();}
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>go(b.dataset.v));
+document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g){go(g.dataset.go);if(g.dataset.scn){selScn=g.dataset.scn;openStart();}}const c=e.target.closest('[data-copy]');if(c)copyText($(c.dataset.copy).value,c);});
+
+/* ================= APRENDER (set) ================= */
+const EQ={
+ agua:{t:'Tanques de agua / pileta',x:20,y:40,w:140,h:90,ic:'💧',fn:'Almacenan el agua de la etapa. En Vaca Muerta se usan piletas y tanques de 500 bbl; una etapa consume entre 5.000 y 10.000 bbl.',
+   par:['Volumen disponible vs. volumen de diseño de la etapa','Calidad del agua: sólidos, hierro, bacterias (afectan los químicos)','Temperatura del agua (afecta la hidratación de geles)'],seg:['Control de nivel para no dejar sin succión al blender','Contención de derrames'],mant:['Limpieza de tanques y válvulas de salida','Mangueras de succión sin pérdidas de aire']},
+ quim:{t:'Unidad de químicos / hidratación',x:20,y:170,w:140,h:80,ic:'🧪',fn:'Dosifica los químicos al fluido: reductor de fricción (FR), biocida, surfactante, inhibidor de incrustaciones y, si hace falta, gel y reticulante.',
+   par:['Concentración en gpt (galones por mil galones). El FR típico va de 0,5 a 1,5 gpt','El FR baja la fricción en el casing entre 60 y 75%','Sin FR, la presión de superficie se dispara y no se alcanza el caudal'],seg:['Hojas de seguridad (MSDS) de cada químico','EPP: guantes, antiparras, ropa resistente a químicos'],mant:['Calibración de las bombas dosificadoras','Verificar los caudalímetros de químicos']},
+ arena:{t:'Silos de arena (sand chiefs)',x:200,y:20,w:150,h:80,ic:'⛰️',fn:'Almacenan el agente de sostén (arena) y lo envían al blender por cintas transportadoras. Mantiene abiertas las fracturas cuando se cierran.',
+   par:['Malla: 100 mesh, 40/70 o 30/50 (más fina, más fácil de transportar)','Libras por etapa: de 200.000 a 400.000 lb en pozos no convencionales','Concentración en ppa = libras de arena por galón de fluido limpio'],seg:['Polvo de sílice: protección respiratoria obligatoria','Bloqueo de cintas antes de intervenir'],mant:['Compuertas y cintas','Sensores de nivel de los silos']},
+ blender:{t:'Blender (mezclador)',x:210,y:170,w:130,h:90,ic:'🌀',fn:'Mezcla agua, químicos y arena para formar la lechada, y la entrega presurizada (60 a 100 psi) al manifold que alimenta las bombas.',
+   par:['Caudal máximo de unos 100 a 120 bpm','Concentración de arena medida por densímetro (ppa)','Presión de descarga: si cae, las bombas cavitan'],seg:['Tornillos sinfín de arena: puntos de atrapamiento','Nunca dejar las bombas sin alimentación (cavitación)'],mant:['Bombas centrífugas de succión y descarga','Calibración del densímetro']},
+ manifold:{t:'Manifold (missile)',x:400,y:200,w:120,h:120,ic:'🔀',fn:'Tiene un lado de baja, que distribuye la lechada a cada bomba, y un lado de alta, que junta la descarga de todas las bombas y la envía al pozo.',
+   par:['Rating del lado de alta: 15.000 psi','Válvulas tapón (plug valves) y de retención (check) por cada bomba'],seg:['ZONA ROJA: nadie entra con presión en las líneas','Las válvulas se operan solo despresurizadas'],mant:['Engrase de las válvulas tapón','Inspección de erosión en las uniones']},
+ bombas:{t:'Bombas de fractura (triplex / quintuplex)',x:380,y:30,w:160,h:120,ic:'⚙️',fn:'El corazón del set. Cada bomba es de desplazamiento positivo (2.000 a 3.000 HHP) y lleva la lechada a la presión necesaria para fracturar la roca.',
+   par:['HHP = Presión (psi) × Caudal (bpm) ÷ 40,8','Caudal por bomba: 6 a 14 bpm, según la marcha y la presión','El caudal total está limitado por los HHP disponibles'],seg:['Kickout: la bomba se para sola si se supera la presión máxima','Válvula de alivio (pop-off) calibrada'],mant:['Fluid end: válvulas, asientos, émbolos y empaquetaduras (packing)','Valve washout: el fluido erosiona válvula y asiento, cae el caudal y la presión oscila','Fuga de packing: sacar la bomba de línea a tiempo para no dañar el fluid end','Power end: lubricación, temperatura y vibraciones']},
+ hierro:{t:'Líneas de alta presión (iron)',x:580,y:240,w:120,h:60,ic:'🧯',fn:'Tubería rígida y uniones de golpe (hammer unions) que llevan la lechada a alta presión hasta la cabeza de pozo.',
+   par:['Rating de 10.000 o 15.000 psi','Prueba de presión antes de cada etapa, por encima de la presión máxima de trabajo'],seg:['Restricciones (cadenas o eslingas) contra latigazos','Despresurizar siempre antes de golpear o ajustar una unión','Prueba de presión: si cae más de lo admitido, hay una fuga'],mant:['Inspección por espesor (UT) y certificación','Cambio de sellos de las uniones']},
+ cabeza:{t:'Cabeza de fractura (frac tree)',x:740,y:150,w:130,h:110,ic:'🛢️',fn:'Conjunto de válvulas sobre el pozo: válvulas maestras, válvula lateral y entrada de alta presión (goat head). Aísla el pozo entre etapas.',
+   par:['Rating de 10.000 o 15.000 psi','Presión de cabeza inicial (WHP): la del reservorio menos la hidrostática'],seg:['Doble barrera: dos válvulas maestras','Prohibido operar válvulas con flujo a alta presión'],mant:['Engrase y torque de las válvulas','Prueba de las válvulas entre pozos (zipper frac)']},
+ van:{t:'Cabina de datos (data van)',x:400,y:380,w:160,h:90,ic:'🖥️',fn:'Desde acá se monitorea y se controla todo: presiones, caudal, concentración de arena, volúmenes y estado de las bombas. Aquí se toman las decisiones.',
+   par:['Gráfico de tratamiento: STP, caudal y ppa en tiempo real','Límite de presión (kickout global)','Volumen de desplazamiento (flush) y lectura del ISIP'],seg:['Comunicación por radio con el personal de campo','Parada de emergencia de todas las bombas'],mant:['Calibración de los transductores de presión','Respaldo de datos']},
+ pozo:{t:'Pozo, punzados y formación',x:740,y:300,w:130,h:180,ic:'⬇️',fn:'La lechada baja por el casing y sale por los punzados (clusters) a la roca. Cuando la presión de fondo supera el esfuerzo mínimo de la roca, se abre la fractura.',
+   par:['Presión de cierre = gradiente de cierre × profundidad vertical (TVD)','Presión neta = presión de fondo − presión de cierre (es lo que hace crecer la fractura)','Fricción en punzados: baja a medida que la arena los erosiona','Tortuosidad: restricción cerca del pozo'],seg:['Integridad del casing: no superar su presión de estallido'],mant:['Plug & perf: el wireline baja el tapón y los cañones entre etapas']}
+};
+const FLOWS=[['agua','blender','lo'],['quim','blender','lo'],['arena','blender','lo'],['blender','manifold','lo'],['manifold','bombas','lo'],['bombas','manifold','hi'],['manifold','hierro','hi'],['hierro','cabeza','hi'],['cabeza','pozo','hi']];
+function drawSpread(){const sv=$('spread');let h='<defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--acc)"/></marker><marker id="ah2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--red)"/></marker></defs>';
+  const cen=k=>[EQ[k].x+EQ[k].w/2,EQ[k].y+EQ[k].h/2];
+  for(const [a,b,t] of FLOWS){let [x1,y1]=cen(a),[x2,y2]=cen(b);if(a==='bombas'&&b==='manifold'){x1+=40;x2+=40;}if(a==='manifold'&&b==='bombas'){x1-=30;x2-=30;}
+    h+=`<line class="flow" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${t==='hi'?'var(--red)':'var(--acc)'}" stroke-width="${t==='hi'?4:3}" marker-end="url(#${t==='hi'?'ah2':'ah'})" opacity=".8"/>`;}
+  h+=`<line x1="480" y1="380" x2="480" y2="320" stroke="var(--blue)" stroke-width="2" stroke-dasharray="3 4"/><text x="490" y="355" style="fill:var(--blue)">datos y control</text>`;
+  for(const k in EQ){const e=EQ[k];h+=`<g class="eq" data-k="${k}"><rect x="${e.x}" y="${e.y}" width="${e.w}" height="${e.h}" rx="10" fill="var(--p2)" stroke="color-mix(in srgb,var(--mu) 15%,var(--ln))"/><text x="${e.x+e.w/2}" y="${e.y+e.h/2-4}" text-anchor="middle" style="font-size:24px">${e.ic}</text><text x="${e.x+e.w/2}" y="${e.y+e.h/2+18}" text-anchor="middle">${e.t.split(' (')[0].split(' / ')[0]}</text></g>`;}
+  h+=`<g opacity=".9"><rect x="790" y="490" width="30" height="2" fill="color-mix(in srgb,var(--bg) 61%,var(--tx))"/><text x="760" y="510" style="fill:var(--mu);font-size:10px">formación</text></g>`;
+  sv.innerHTML=h;sv.querySelectorAll('.eq').forEach(g=>g.onclick=()=>showEq(g.dataset.k));showEq('bombas');}
+function showEq(k){const e=EQ[k];document.querySelectorAll('#spread .eq').forEach(g=>g.classList.toggle('sel',g.dataset.k===k));
+  $('eqInfo').innerHTML=`<h2>${e.ic} ${e.t}</h2><div style="color:color-mix(in srgb,var(--mu) 24%,var(--tx));line-height:1.5">${e.fn}</div><h4>Parámetros clave</h4><ul>${e.par.map(x=>'<li>'+x+'</li>').join('')}</ul><h4>Seguridad</h4><ul>${e.seg.map(x=>'<li>'+x+'</li>').join('')}</ul><h4>Mantenimiento</h4><ul>${e.mant.map(x=>'<li>'+x+'</li>').join('')}</ul>`;}
+const CONCEPTS=[
+ ['Secuencia de una etapa','<p><b>1.</b> Prueba de presión de líneas → <b>2.</b> Abrir el pozo y leer la WHP → <b>3.</b> Ácido (opcional) y rotura de la formación a bajo caudal → <b>4.</b> Subir al caudal de diseño → <b>5.</b> Colchón (pad) sin arena → <b>6.</b> Rampa de arena (ppa creciente) → <b>7.</b> Desplazamiento (flush) → <b>8.</b> Parar bombas y leer el ISIP.</p>'],
+ ['¿Qué presión ves en superficie?','<p><b>STP = BHP − Hidrostática + Fricción en tubería + Fricción en punzados + Tortuosidad</b></p><p>La hidrostática <i>ayuda</i> (resta) y crece cuando la lechada con arena llena el pozo. Las fricciones crecen con el caudal: la de tubería con Q<sup>1,75</sup> y la de punzados con Q².</p>'],
+ ['Presión neta y crecimiento','<p>Presión neta = BHP − presión de cierre. Si sube suave (pendiente ≈ +0,25), la fractura se extiende sana. Si sube en vertical (pendiente ≈ 1), hay restricción o <b>arenamiento</b>. Si cae mientras bombeas, la fractura está creciendo en altura fuera de la zona.</p>'],
+ ['Arenamiento (screen-out)','<p>La fractura ya no admite arena y la presión se dispara. Causas: colchón insuficiente, rampa de arena muy agresiva, caudal bajo o mucha pérdida de fluido. <b>Respuesta:</b> cortar la arena en cuanto veas la pendiente y desplazar con fluido limpio. Recuerda que la arena que ya está en el casing igual va a llegar.</p>'],
+ ['Desplazamiento (flush)','<p>Al terminar la arena se bombea fluido limpio igual al volumen del pozo hasta el punzado superior: <b>capacidad (bbl/ft) × MD</b>. Si te quedas corto (underflush), queda arena en el casing y complica la bajada del tapón. Si te pasas (overflush), empujas la arena lejos del pozo.</p>'],
+ ['ISIP y gradiente de fractura','<p>Al parar las bombas desaparecen las fricciones. La presión instantánea de cierre en superficie es el <b>ISIP</b>. Con ella: <b>Gradiente de fractura = (ISIP + Hidrostática) ÷ TVD</b>, en psi/ft.</p>'],
+ ['Potencia (HHP) y bombas','<p><b>HHP = psi × bpm ÷ 40,8</b>. Si se cae una bomba, pierdes HHP y el sistema no puede sostener el caudal a esa presión: baja el caudal o pon otra bomba en línea. Cuantos más HHP de reserva, más seguro operas.</p>'],
+ ['Desfasaje superficie–fondo','<p>Lo que cambias en el blender tarda un volumen de pozo en llegar a los punzados (a 80 bpm, unos 5 minutos en un horizontal). Por eso se mira la <b>ppa en fondo</b> calculada para interpretar la presión.</p>']];
+function drawConcepts(){$('concepts').innerHTML=CONCEPTS.map(([t,b])=>`<div class="card"><h3>${t}</h3>${b}</div>`).join('');}
+drawSpread();drawConcepts();
+
+/* ================= ESCENARIOS ================= */
+const VMSCHED_OIL=[['Colchón (pad)',0,1200],['Arena 0,5 ppa',.5,800],['Arena 0,75 ppa',.75,1000],['Arena 1,0 ppa',1,1200],['Arena 1,25 ppa',1.25,1200],['Arena 1,5 ppa',1.5,1200],['Arena 1,75 ppa',1.75,1100],['Arena 2,0 ppa',2,1000],['Arena 2,25 ppa',2.25,700]];
+const BUILT={
+ escuela:{name:'Pozo escuela (vertical)',lvl:'BÁSICO',col:'var(--grn)',desc:'Pozo vertical de 7.000 ft (2.134 m) en arenisca, con presiones bajas y pocas bombas. Ideal para aprender la secuencia.',
+   TVD:7000,MD:7000,id:4.0,casing:'4½" 11,6# (ID 4,000")',pore:.45,closure:.68,breakX:1400,pnet0:380,contain:1200,maxP:9000,ironP:10000,pumps:4,php:2500,pm:'tws2500',pl:4.5,perfN:24,perfD:.42,clusters:1,
+   tort0:350,eff0:.75,effEnd:.45,friK:1.65e-4,Qd:35,ppaCap:4.2,sched:[['Colchón (pad)',0,500],['Arena 0,5 ppa',.5,400],['Arena 1,0 ppa',1,500],['Arena 2,0 ppa',2,500],['Arena 3,0 ppa',3,400]],sand:130000,water:3000,fail:.4,leak:0,wear:[.1,.6],wMul:3},
+ vm_oil:{name:'Vaca Muerta — ventana de petróleo',lvl:'INTERMEDIO',col:'var(--yel)',desc:'Horizontal típico de la zona núcleo: TVD 9.680 ft (2.950 m), MD a punzados 18.500 ft (5.640 m), 8 clusters, slickwater, ~1.550 m³ de agua y ~212 t de arena por etapa.',
+   TVD:9680,MD:18500,id:4.67,casing:'5½" 23# P-110 (ID 4,670")',pore:.88,closure:.98,breakX:1800,pnet0:620,contain:1500,maxP:12500,ironP:15000,pumps:14,php:2500,pm:'exl',pl:4.5,perfN:48,perfD:.40,clusters:8,
+   tort0:450,eff0:.82,effEnd:.55,friK:8.1e-5,Qd:85,ppaCap:3.0,sched:VMSCHED_OIL,sand:520000,water:11000,fail:1,leak:.5,wear:[.1,.97]},
+ vm_gas:{name:'Vaca Muerta — ventana de gas (profundo)',lvl:'AVANZADO',col:'color-mix(in srgb,var(--red) 38%,var(--yel))',desc:'Más profundo y con mayor esfuerzo de cierre: TVD 10.830 ft (3.300 m), MD 20.000 ft (6.100 m). Presión de superficie cerca del kickout: hay que cuidar cada bpm.',
+   TVD:10830,MD:20000,id:4.67,casing:'5½" 23# P-110 (ID 4,670")',pore:.92,closure:1.02,breakX:2000,pnet0:700,contain:1500,maxP:12500,ironP:15000,pumps:16,php:2500,pm:'exl',pl:4.5,perfN:48,perfD:.40,clusters:8,
+   tort0:500,eff0:.85,effEnd:.6,friK:8.1e-5,Qd:80,ppaCap:2.6,sched:[['Colchón (pad)',0,1300],['Arena 0,25 ppa',.25,800],['Arena 0,5 ppa',.5,1000],['Arena 0,75 ppa',.75,1100],['Arena 1,0 ppa',1,1200],['Arena 1,25 ppa',1.25,1100],['Arena 1,5 ppa',1.5,1000],['Arena 1,75 ppa',1.75,800],['Arena 2,0 ppa',2,600]],sand:400000,water:11000,fail:1,leak:.5,wear:[.1,.97]},
+ dificil:{name:'Desafío: alta tortuosidad',lvl:'EXPERTO',col:'var(--red)',desc:'Petróleo VM con tortuosidad alta, 36 punzados efectivos, cierre de 1,00 psi/ft y bombas con desgaste. Hay que ganar caudal de a poco.',
+   TVD:9680,MD:18500,id:4.67,casing:'5½" 23# P-110 (ID 4,670")',pore:.9,closure:1.0,breakX:2100,pnet0:700,contain:1350,maxP:12500,ironP:15000,pumps:14,php:2500,pm:'qws2500',pl:4.5,perfN:36,perfD:.40,clusters:6,
+   tort0:1300,eff0:.72,effEnd:.42,friK:8.1e-5,Qd:85,ppaCap:2.55,sched:VMSCHED_OIL,sand:520000,water:11000,fail:2,leak:.8,wear:[.3,1.05]}};
+
+/* ================= CATÁLOGO DE BOMBAS ================= */
+const PUMPS={
+ exl:{n:'SPM EXL',mk:'SPM Oil & Gas',t:'Quintuplex',cyl:5,bhp:2500,L:8,rod:238000,rpm:330,pl:[4,4.5,5,5.5,6],src:'Ficha SPM EXL Frac Pump',url:'https://www.spmoilandgas.com/en_US/products/new/spm-oil-and-gas/well-service-frac/well-service-pumps/112483.html'},
+ qws2500:{n:'SPM QWS-2500',mk:'SPM Oil & Gas (ex Weir SPM)',t:'Quintuplex',cyl:5,bhp:2500,L:8,rod:192325,rpm:330,pl:[3.75,4,4.5,5,5.5],src:'Plataforma QWS-2500 (8", ~192.000 lb). Confirmar con el manual del fabricante',url:''},
+ tws2500:{n:'SPM Destiny TWS-2500',mk:'SPM Oil & Gas (ex Weir SPM)',t:'Triplex',cyl:3,bhp:2500,L:10,rod:273000,rpm:275,pl:[4.5,5,5.5,6,6.5,7],src:'Weir SPM: 2.500 BHP, 273.000 lb, carrera 10". RPM máx. orientativa',url:''},
+ gd2500q:{n:'GD-2500Q HDF',mk:'GD Energy Products (ex Gardner Denver)',t:'Quintuplex',cyl:5,bhp:2500,L:8,rod:196350,rpm:330,pl:[3.75,4,4.5,5,5.5,6,6.75],src:'Ficha técnica GD 2500Q HDF',url:'https://www.candbsales.com/wp-content/uploads/GD-2500Q-HDF-CB-ver.pdf'},
+ ws255:{n:'Cat WS255',mk:'Caterpillar',t:'Quintuplex',cyl:5,bhp:2500,L:8,rod:238000,rpm:330,pl:[4,4.5,5,5.5,6],src:'Folleto Cat Well Service Pumps (LEDW0024)',url:''},
+ gd2250t:{n:'GD-2250T',mk:'GD Energy Products (ex Gardner Denver)',t:'Triplex',cyl:3,bhp:2250,L:8,rod:237500,rpm:330,pl:[4,4.5,5,5.5,6,6.5,7,7.5],src:'Tabla de bombas de estimulación GD',url:'https://www.candbsales.com/product/stimulation-fracturing-pumps/'}};
+const ME=.9; /* eficiencia mecánica: las fichas dan HHP = 90% de la BHP */
+function pumpSpec(k,d){const m=PUMPS[k]||PUMPS.gd2500q,A=Math.PI*d*d/4,gal=m.cyl*A*m.L/231,bpr=gal/42;
+  return {k:PUMPS[k]?k:'gd2500q',m,d,A,gal,bpr,qmax:bpr*m.rpm,pmax:Math.min(Math.floor(m.rod/A/50)*50,20000),hhp:m.bhp*ME};}
+function pumpQatP(sp,P){return Math.min(sp.qmax,40.8*sp.hhp/Math.max(P,1));}
+function pumpLabel(sp){return `${sp.m.n} · ${sp.m.t} ${fmt(sp.m.bhp)} BHP · émbolo ${String(sp.d).replace('.',',')}"`;}
+function pmOptions(sel){const o=([k,m])=>`<option value="${k}" ${k===sel?'selected':''}>${m.n} — ${m.t} ${fmt(m.bhp)} BHP</option>`,E=Object.entries(PUMPS);return `<optgroup label="SPM (tu flota)">${E.filter(([k,m])=>m.n.startsWith('SPM')).map(o).join('')}</optgroup><optgroup label="Otras marcas">${E.filter(([k,m])=>!m.n.startsWith('SPM')).map(o).join('')}</optgroup>`;}
+function plOptions(k,sel){return PUMPS[k].pl.map(d=>`<option value="${d}" ${Math.abs(d-sel)<1e-6?'selected':''}>${String(d).replace('.',',')}"</option>`).join('');}
+function pumpWarn(sp,c){const W=[];if(sp.pmax<c.maxP*.85)W.push(`Con émbolo de ${String(sp.d).replace('.',',')}" la bomba llega solo a ${fmt(sp.pmax)} psi (límite por rod load) y el programa necesita trabajar cerca de ${fmt(c.maxP)} psi. Usa un émbolo más chico.`);
+  else if(sp.pmax<c.maxP)W.push(`El rod load limita la presión a ${fmt(sp.pmax)} psi, por debajo de la máxima del programa (${fmt(c.maxP)}). El kickout deberá quedar por debajo de ese valor.`);
+  const est=c.Qd?c.Qd:0,P=c.maxP*.8,qp=pumpQatP(sp,P)*c.pumps;if(est&&qp<est*1.1)W.push(`Con ${c.pumps} bombas y este émbolo, a ~${fmt(P)} psi solo llegas a ${qp.toFixed(0)} bpm (diseño ${est} bpm). Suma bombas o usa un émbolo más grande.`);return W;}
+let CUSTOM=store.get('custom',{});
+const allScn=()=>Object.assign({},BUILT,CUSTOM);
+let selScn='escuela';
+function specHTML(sp){return `<div class="specbox"><div><span>Cilindros × carrera</span><b>${sp.m.cyl} × ${sp.m.L}"</b></div><div><span>Desplazamiento</span><b>${sp.gal.toFixed(2)} gal/rev</b></div><div><span>Caudal máx. (${sp.m.rpm} rpm)</span><b>${sp.qmax.toFixed(1)} bpm</b></div><div><span>Presión máx. (rod load)</span><b>${fmt(sp.pmax)} psi</b></div><div><span>HHP útil (90%)</span><b>${fmt(sp.hhp)}</b></div></div>`;}
+function stRefresh(fromScn){const c=allScn()[selScn];if(fromScn){$('stPm').innerHTML=pmOptions(c.pm||'gd2500q');$('stPl').innerHTML=plOptions($('stPm').value,c.pl||4.5);}
+  const sp=pumpSpec($('stPm').value,+$('stPl').value),W=pumpWarn(sp,c);$('stSpec').innerHTML=specHTML(sp)+W.map(w=>`<div class="warnbox" style="margin-top:6px">⚠ ${w}</div>`).join('');}
+function openStart(){const L=allScn();$('scnList').innerHTML=Object.entries(L).map(([k,s])=>`<div class="o${k===selScn?' sel':''}" data-k="${k}"><b>${s.name}</b><small>${s.desc||''}</small><span class="tag" style="background:color-mix(in srgb,${s.col||'var(--blue)'} 14%,transparent);color:${s.col||'var(--blue)'}">${s.lvl||'PERSONALIZADO'}</span></div>`).join('');
+  document.querySelectorAll('#scnList .o').forEach(o=>o.onclick=()=>{selScn=o.dataset.k;document.querySelectorAll('#scnList .o').forEach(x=>x.classList.toggle('sel',x===o));stRefresh(true);});stRefresh(true);$('ovStart').classList.remove('hidden');}
+$('stPm').onchange=()=>{const k=$('stPm').value,cur=+$('stPl').value,pl=PUMPS[k].pl,d=pl.includes(cur)?cur:pl.reduce((a,b)=>Math.abs(b-4.5)<Math.abs(a-4.5)?b:a);$('stPl').innerHTML=plOptions(k,d);stRefresh();};
+$('stPl').onchange=()=>stRefresh();
+$('btnGo').onclick=()=>{$('ovStart').classList.add('hidden');start(selScn,{pm:$('stPm').value,pl:+$('stPl').value});go('sim');};
+$('btnNew').onclick=openStart;
+
+/* ================= BOMBAS: componentes, fallas y reparaciones ================= */
+const LIFE={vs:150,vd:150,pk:120,pl:600,tapa:400,fe:2000,pe:1000};
+const GRP={vs:'Válvulas y asientos de succión',vd:'Válvulas y asientos de descarga',pk:'Empaquetaduras (packing)',pl:'Émbolos (plungers)',tapa:'Sellos de tapas de succión',fe:'Fluid end (bloque)',pe:'Power end — lubricación'};
+const FAIL={
+ vs_wash:{g:'vs',t:'Válvula y asiento de SUCCIÓN lavados',h:.6,fix:['valvula_succion','asiento_succion'],esc:240,next:null,sym:'El caudal de la bomba cae ~40%, hay golpeteo en el fluid end y la presión de succión oscila.',why:'La arena erosionó la cara de sello de la válvula y del asiento: en cada carrera el fluido vuelve a la succión.'},
+ vd_wash:{g:'vd',t:'Válvula y asiento de DESCARGA lavados',h:.6,fix:['valvula_descarga','asiento_descarga'],esc:240,next:null,sym:'El caudal de la bomba cae ~40% y la presión de descarga pulsa.',why:'La válvula de descarga no sella: el fluido a alta presión vuelve al cilindro.'},
+ seal:{g:'vs',t:'Sello (inserto de uretano) de la válvula de SUCCIÓN dañado',h:.88,fix:['sello'],esc:420,next:'vs_wash',sym:'Pérdida leve de eficiencia (~12%), sin golpeteo.',why:'El inserto de uretano se cortó pero el metal todavía está sano: si se cambia a tiempo, alcanza con el sello.'},
+ spring:{g:'vd',t:'Resorte de válvula de DESCARGA roto',h:.8,fix:['resorte'],esc:300,next:'vd_wash',sym:'Golpeteo metálico y caudal de la bomba −20%.',why:'Sin resorte la válvula cierra tarde y golpea el asiento: si sigue así, lo lava.'},
+ packing:{g:'pk',t:'Fuga de empaquetadura (packing)',h:.95,fix:['packing'],esc:300,next:'plunger',sym:'Sale fluido por el orificio de drenaje (weep hole) del prensaestopas.',why:'La empaquetadura perdió sello sobre el émbolo; si sigue, la arena raya el émbolo.'},
+ plunger:{g:'pl',t:'Émbolo rayado con fuga de packing',h:.9,fix:['embolo','packing'],esc:300,next:null,sym:'Fuga continua por el prensaestopas, aun recién ajustado.',why:'Un émbolo rayado destruye cualquier packing nuevo: hay que cambiar los dos.'},
+ cover:{g:'tapa',t:'Sello de la tapa de succión con fuga',h:.93,fix:['sello_tapa'],esc:400,next:null,sym:'Goteo en la tapa (cover) del cilindro.',why:'El o-ring de la tapa perdió sello; si sigue, lava el alojamiento del bloque.'},
+ fe_crack:{g:'fe',t:'Fisura en el fluid end (bloque)',h:.7,fix:['fluid_end'],esc:60,next:null,sym:'Sale fluido por el cuerpo del bloque. ¡Riesgo alto: sácala de inmediato!',why:'Fatiga del bloque por los ciclos de presión: solo se resuelve cambiando el fluid end.'},
+ lube:{g:'pe',t:'Baja presión de aceite de lubricación (power end)',h:1,fix:['lubricacion'],esc:180,next:null,sym:'Alarma de baja presión de aceite y temperatura del power end en aumento.',why:'Filtro tapado o bajo nivel de aceite: sin lubricación se dañan bielas y cojinetes.'}};
+const REP={sello:['Solo sellos (insertos de uretano) de válvula',10],valvula_succion:['Válvula de succión (con inserto)',15],asiento_succion:['Asiento de succión',20],
+ valvula_descarga:['Válvula de descarga (con inserto)',15],asiento_descarga:['Asiento de descarga',20],resorte:['Resortes de válvula',8],packing:['Empaquetadura (packing) completa',25],
+ embolo:['Émbolo (plunger)',30],sello_tapa:['Sello / o-ring de tapa de succión',10],fluid_end:['Fluid end completo (bloque)',240],lubricacion:['Lubricación: filtro, aceite y bomba de aceite',20]};
+const COVERS={valvula_succion:['sello'],valvula_descarga:['sello']};
+const MISSMSG={'vs_wash|valvula_succion':'Pusiste válvula nueva sobre un asiento lavado: no asienta y se vuelve a lavar en minutos.','vs_wash|asiento_succion':'Asiento nuevo con una válvula erosionada: no sella.',
+ 'vd_wash|valvula_descarga':'Válvula nueva sobre asiento de descarga lavado: no sella.','vd_wash|asiento_descarga':'Asiento nuevo con válvula de descarga erosionada: no sella.','plunger|embolo':'El émbolo nuevo con la empaquetadura vieja sigue perdiendo.','plunger|packing':'Packing nuevo sobre un émbolo rayado: se destruye en minutos.'};
+function mkPump(i,c){const[w0,w1]=c.wear||[.1,.9],r=()=>rnd(w0,w1),hrs={};for(const g in LIFE)hrs[g]=LIFE[g]*(g==='fe'?rnd(.1,.7):g==='pe'?rnd(.1,.8):g==='pl'?rnd(.1,.85):r());
+  return {id:i+1,on:false,dead:false,maint:0,issue:null,h:1,hrs,model:c.model||'Quintuplex 2.500 HHP',deadWhy:''};}
+function pumpWear(p,g){return p.hrs[g]/LIFE[g];}
+function pumpPM(p){return Object.keys(LIFE).filter(g=>pumpWear(p,g)>=.85);}
+const PMFIX={vs:['valvula_succion','asiento_succion'],vd:['valvula_descarga','asiento_descarga'],pk:['packing'],pl:['embolo','packing'],tapa:['sello_tapa'],fe:['fluid_end'],pe:['lubricacion']};
+
+/* ================= MODELO ================= */
+let S=null,speed=30;
+const ABS=.0453;const rhoS=p=>(8.4+p)/(1+ABS*p);
+function start(k,o){const c=Object.assign({},allScn()[k]);c.cap=c.id*c.id/1029.4;o=o||{};c.ps=pumpSpec(o.pm||c.pm||'gd2500q',o.pl||c.pl||4.5);c.php=c.ps.m.bhp;c.model=pumpLabel(c.ps);
+  S={c,k,t:0,checkDone:false,kickSet:c.maxP,popSet:null,hiTest:c.maxP+500,testLow:false,padDone:false,rampDone:false,shutT:0,isipOk:false,stopAsk:0,warnPad:0,valve:false,testDone:false,test:null,repairing:0,broken:false,bhpC:c.pore*c.TVD,Q:0,Qset:0,ppaSet:0,fr:1,acidPend:0,
+    wb:[{v:c.cap*c.MD,ppa:0,acid:0}],Vin:0,Vclean:0,VcleanBD:0,sandPumped:0,sandForm:0,sandInv:c.sand,waterInv:c.water||99999,Vf:0,H:c.clusters>1?150:110,so:0,soMax:0,screen:false,
+    sandThru:0,tort:c.tort0,cd:.62,pnet:0,kick:0,maxSTP:0,ev:[],hist:[],histT:0,padClean:0,firstSandBottom:false,qSum:0,qN:0,pSum:0,
+    flushing:false,flushStart:0,wbSandClearV:null,overflush:0,shut:false,isip:null,isipBHP:null,ended:false,phase:'Inicio',issuesHandled:0,repOk:0,repBad:0,pumpDamage:0,orders:[],
+    pumps:Array.from({length:c.pumps},(_,i)=>mkPump(i,c)),failOn:$('optFail').checked,hhpLim:false,acidAtPerf:false,breakP:null,stpNow:0,bhpNow:0,parts:{},whp:null,startDate:new Date()};
+  $('scnName').textContent=c.name;$('qSet').value=0;$('ppaSet').value=0;$('frSel').value='1';$('qSet').max=Math.min(110,Math.floor(c.pumps*c.ps.qmax));$('autoSand').checked=true;
+  $('btnEnd').disabled=true;buildPumps();buildSched();$('log').innerHTML='';$('toast').innerHTML='';
+  log(`Etapa iniciada: ${c.name}. TVD ${fmt(c.TVD)} ft (${fmt(ft2m(c.TVD))} m), MD ${fmt(c.MD)} ft (${fmt(ft2m(c.MD))} m), casing ${c.casing}. Líneas de ${fmt(c.ironP)} psi, presión máxima de trabajo ${fmt(c.maxP)} psi.`,'g');
+  log(`Volumen del pozo hasta punzados: ${fmt(c.cap*c.MD)} bbl (${c.cap.toFixed(5)} bbl/ft × ${fmt(c.MD)} ft).`);
+  const pm=S.pumps.filter(p=>pumpPM(p).length);if(pm.length)log(`Revisión de horas: ${pm.length} bomba(s) con componentes al final de su vida útil (🔧): ${pm.map(p=>'B'+p.id).join(', ')}. Conviene hacer el mantenimiento preventivo antes de bombear.`,'w');
+  log(`Bombas: ${c.pumps} × ${c.model}. Cada una: ${c.ps.qmax.toFixed(1)} bpm máx. a ${c.ps.m.rpm} rpm, ${fmt(c.ps.pmax)} psi máx. por rod load (${fmt(c.ps.m.rod)} lb), ${fmt(c.ps.hhp)} HHP útiles.`);
+  drawPlan();updateUI();setTimeout(openFleet,300);}
+function log(m,cls=''){if(!S)return;S.ev.push({t:S.t,m,cls});const d=document.createElement('div');d.className=cls;d.innerHTML=`<span class="t">${clock(S.t)}</span>${m}`;$('log').prepend(d);}
+function toast(html,ms=9000){const d=document.createElement('div');d.innerHTML=html;d.onclick=()=>d.remove();$('toast').appendChild(d);while($('toast').children.length>3)$('toast').firstChild.remove();setTimeout(()=>d.remove(),ms);}
+function clock(t){const h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=Math.floor(t%60);return [h,m,s].map(x=>String(x).padStart(2,'0')).join(':');}
+const wbVol=()=>S.wb.reduce((a,b)=>a+b.v,0);
+function hydro(){const c=S.c,Vv=c.cap*c.TVD;let acc=0,m=0;for(let i=S.wb.length-1;i>=0&&acc<Vv;i--){const s=S.wb[i],v=Math.min(s.v,Vv-acc);m+=v*(s.acid?8.9:rhoS(s.ppa));acc+=v;}return .052*(m/Math.max(acc,1e-6))*c.TVD;}
+function wbAvgPpa(){let v=0,m=0;for(const s of S.wb){v+=s.v;m+=s.v*s.ppa;}return m/Math.max(v,1e-6);}
+function frMult(){return {0:3.2,0.5:1.3,1:1,1.5:.94}[S.fr];}
+function pnetAt(Q){const c=S.c;let p=c.pnet0*Math.pow(1+S.Vf/3000,.25)*Math.pow(Math.max(Q,1)/c.Qd,.25);if(p>c.contain)p=c.contain+(p-c.contain)*.25;return p;}
+function pressures(Q){const c=S.c,ph=hydro(),bot=S.wb[0]||{ppa:0};
+  const fric=Q>0?c.friK*c.MD*Math.pow(Q,1.75)*frMult()*(1+.05*wbAvgPpa()):0;
+  const perf=Q>0?.2369*Q*Q*rhoS(bot.ppa)/(c.perfN*c.perfN*Math.pow(c.perfD,4)*S.cd*S.cd):0;
+  const tort=Q>0&&S.broken?S.tort*Math.pow(Q/c.Qd,.5):0;
+  let bhp;if(!S.broken)bhp=S.bhpC;else if(Q>0)bhp=c.closure*c.TVD+pnetAt(Q)+S.so;else bhp=S.shutBHP??(c.closure*c.TVD+S.pnet);
+  const stp=S.valve?Math.max(0,bhp-ph+fric+perf+tort):0;return {ph,fric,perf,tort,bhp,stp};}
+function pumpRate(p){return p.on&&!p.dead&&!p.maint?p.h:0;}
+function availHHP(){return S.pumps.reduce((a,p)=>a+S.c.ps.hhp*pumpRate(p),0);}
+function nOn(){return S.pumps.filter(p=>p.on&&!p.dead&&!p.maint).length;}
+function newIssue(p,type){const cyl=1+Math.floor(Math.random()*((S&&S.c.ps)?S.c.ps.m.cyl:5));p.issue={type,cyl,t:0};p.h=FAIL[type].h;announce(p);}
+function announce(p){const f=FAIL[p.issue.type],adv=$('optDiag').checked;
+  const fixTxt=f.fix.map(x=>REP[x][0]).join(' + ');
+  log(adv?`Bomba ${p.id} · cilindro ${p.issue.cyl}: ${f.sym} Diagnostica y repara.`:`Bomba ${p.id} · cilindro ${p.issue.cyl}: ${f.t.toUpperCase()}. ${f.sym} Cambiar: ${fixTxt}.`,'w');
+  toast(adv?`⚠ <b>Bomba ${p.id} · cilindro ${p.issue.cyl}</b><br>${f.sym}<br>Sácala de línea, aíslala y abre la orden de mantenimiento para diagnosticar.`
+    :`🔧 <b>Bomba ${p.id} · cilindro ${p.issue.cyl}: ${f.t}</b><br>${f.sym}<br><b>Hay que cambiar:</b> ${fixTxt}.<br>Sácala de línea → toca la bomba → «Orden de mantenimiento».`);}
+function step(dt){const c=S.c,dtm=dt/60;S.t+=dt;
+  if(S.repairing>0){S.repairing-=dt;if(S.repairing<=0){log('Unión reparada. Repite la prueba de presión desde la baja.','g');S.test=null;}}
+  if(S.test){const T=S.test,low=T.stage==='low',tgt=low?1000:S.hiTest,nm=low?'BAJA':'ALTA';
+    if(T.ph==='up'){T.p=Math.min(tgt,T.p+4000*dtm);if(T.p>=tgt){T.ph='hold';T.t=0;T.p0=T.p;log(`Prueba de ${nm}: ${fmt(T.p)} psi alcanzados. Sosteniendo ${low?'1 minuto':'3 minutos'}…`);}}
+    else if(T.ph==='hold'){T.t+=dt;const hold=low?60:180,lim=low?25:100;T.p-=(T.leak?260:(low?3:8))*dtm;
+      if(T.t>=hold){const drop=T.p0-T.p;if(drop>lim){T.ph='fail';S.testLow=false;log(`PRUEBA DE ${nm} FALLIDA: caída de ${fmt(drop)} psi (máximo admitido ${lim} psi). Fuga en una unión del lado de alta.`,'e');}
+        else if(low){S.testLow=true;S.lowDrop=drop;log(`Prueba de BAJA aprobada (caída ${fmt(drop)} psi). Subiendo a la prueba de ALTA: ${fmt(S.hiTest)} psi.`,'g');T.stage='high';T.ph='up';T.leak=!S.leakedOnce&&Math.random()<c.leak;if(T.leak)S.leakedOnce=true;}
+        else{T.ph='ok';S.testDone=true;S.hiDrop=drop;log(`Prueba de ALTA aprobada: caída de ${fmt(drop)} psi en 3 min. Despresurizando. Ya se puede abrir el pozo.`,'g');}}}
+    else if(T.ph==='ok'||T.ph==='fail'){T.p=Math.max(0,T.p-(T.ph==='ok'?40000:6000)*dtm);if(T.ph==='ok'&&T.p<=0)S.test=null;}}
+  // bombas: horas, mantenimiento, fallas
+  const load=.6+.8*Math.pow((S.stpNow||0)/10000,1.5)*(1+.6*(S.ppaS||0));
+  for(const p of S.pumps){
+    if(p.maint>0){p.maint-=dt;if(p.maint<=0){p.maint=0;finishMaint(p);}continue;}
+    if(p.dead)continue;
+    if(p.on&&S.Q>0){for(const g in LIFE)p.hrs[g]+=dt/3600*(g==='pe'?1:load);
+      if(S.failOn&&!p.issue){const fac={fe:.12,pe:.3,tapa:.5,pl:.5};for(const g in LIFE){const w=pumpWear(p,g),lam=(.00004+.03*Math.pow(Math.max(0,w-.75),2))*(fac[g]||1)*c.fail;
+        if(Math.random()<lam*dtm){const type=g==='vs'?(w<.9&&Math.random()<.5?'seal':'vs_wash'):g==='vd'?(Math.random()<.35?'spring':'vd_wash'):g==='pk'?(pumpWear(p,'pl')>.7?'plunger':'packing'):g==='pl'?'plunger':g==='tapa'?'cover':g==='fe'?'fe_crack':'lube';newIssue(p,type);break;}}}}
+    if(p.issue&&p.on){p.issue.t+=dt;const f=FAIL[p.issue.type];if(p.issue.t>f.esc){if(f.next){const cyl=p.issue.cyl;p.issue={type:f.next,cyl,t:0};p.h=FAIL[f.next].h;log(`Bomba ${p.id}: la falla empeoró por no atenderla a tiempo.`,'e');announce(p);}
+      else{p.dead=true;p.on=false;S.pumpDamage++;p.deadWhy=f.t;log(`Bomba ${p.id}: ${p.issue.type==='lube'?'daño en el power end':'daño mayor en el fluid end'} por no sacarla a tiempo. Queda FUERA DE SERVICIO.`,'e');}}}}
+  // caudal
+  let target=S.checkDone&&S.valve&&nOn()>0&&!S.test?Math.min(S.Qset,S.pumps.reduce((a,p)=>a+S.c.ps.qmax*pumpRate(p),0),110):0;
+  if(S.Q<target)S.Q=Math.min(target,S.Q+20*dtm);else S.Q=Math.max(target,S.Q-60*dtm);
+  S.hhpLim=false;
+  if(S.Q>0){const av=availHHP(),need=q=>pressures(q).stp*q/40.8;if(need(S.Q)>av){let lo=0,hi=S.Q;for(let i=0;i<12;i++){const m=(lo+hi)/2;if(need(m)>av)hi=m;else lo=m;}S.Q=lo;S.hhpLim=true;}}
+  // arena
+  let ppa=0;const autoSand=$('autoSand').checked;
+  if(autoSand&&S.broken&&!S.flushing&&S.Q>0&&schedIdx()>=c.sched.length)doFlush(true);
+  if(S.flushing)ppa=0;else if(autoSand&&S.broken)ppa=schedPpa();else ppa=S.ppaSet;
+  if(S.broken&&!S.padDone&&S.Vclean-S.VcleanBD>=c.sched[0][2]*.95){S.padDone=true;log(`Colchón completo: ${fmt(S.Vclean-S.VcleanBD)} bbl. Habilitada la adición de arena.`,'g');}
+  if(ppa>0&&!S.padDone){ppa=0;if(S.t-S.warnPad>60){S.warnPad=S.t;log(`INDISPENSABLE: no se agrega arena sin romper la formación y completar el colchón (${fmt(c.sched[0][2])} bbl). Arena bloqueada.`,'w');}}
+  if(S.sandInv<=0){if(ppa>0&&!S.noSand){S.noSand=true;log('Silos vacíos: sin arena disponible. Hay que desplazar.','e');}ppa=0;}
+  S.ppaS=S.Q>0?ppa:0;
+  if(S.broken&&!S.rampDone&&S.Q>=c.Qd*.9){S.rampDone=true;log(`Caudal de diseño alcanzado: ${S.Q.toFixed(1)} bpm a ${fmt(S.stpNow)} psi.`,'g');}
+  // pozo (flujo tapón)
+  if(S.valve&&S.Q>0){const sl=S.Q*dtm,clean=sl/(1+ABS*S.ppaS),lb=clean*42*S.ppaS;S.Vclean+=clean;S.waterInv-=clean;S.sandPumped+=lb;S.sandInv-=lb;S.qSum+=S.Q*dt;S.qN+=dt;S.pSum+=(S.stpNow||0)*dt;
+    const acid=S.acidPend>0?1:0;if(acid)S.acidPend-=sl;
+    const top=S.wb[S.wb.length-1];if(top&&Math.abs(top.ppa-S.ppaS)<.001&&top.acid===acid)top.v+=sl;else S.wb.push({v:sl,ppa:S.ppaS,acid});
+    let rem=sl,sandB=0,cleanB=0,acidB=0;while(rem>1e-9&&S.wb.length){const b=S.wb[0],take=Math.min(b.v,rem);const cl=take/(1+ABS*b.ppa);cleanB+=cl;sandB+=cl*42*b.ppa;acidB+=b.acid?take:0;b.v-=take;rem-=take;if(b.v<=1e-9)S.wb.shift();}
+    S.ppaB=cleanB>0?sandB/(cleanB*42):0;
+    if(acidB>0&&!S.broken&&!S.acidAtPerf){S.acidAtPerf=true;log('El ácido llegó a los punzados: limpia el daño y baja la presión de rotura.','g');}
+    if(!S.broken){S.bhpC+=sl*650;const pb=c.closure*c.TVD+c.breakX-(S.acidAtPerf?1100:0);
+      if(S.bhpC>=pb){S.broken=true;S.VcleanBD=S.Vclean;S.breakP={bhp:S.bhpC,stp:pressures(S.Q).stp,q:S.Q};log(`¡ROTURA DE FORMACIÓN! BHP ${fmt(S.bhpC)} psi, superficie ${fmt(S.breakP.stp)} psi a ${S.Q.toFixed(1)} bpm. La fractura se abrió: la presión cae a extensión.`,'g');}}
+    else{S.Vin+=sl;const eff=c.effEnd+(c.eff0-c.effEnd)*Math.exp(-S.Vin/4000);S.eff=eff;S.Vf+=sl*eff;S.sandForm+=sandB;S.sandThru+=sandB;
+      if(sandB<=0&&!S.firstSandBottom)S.padClean+=cleanB;if(sandB>0&&!S.firstSandBottom){S.firstSandBottom=true;log(`La arena llegó a los punzados (ppa en fondo ${S.ppaB.toFixed(2)}). Colchón efectivo en la formación: ${fmt(S.padClean)} bbl.`);}
+      S.tort=c.tort0*Math.exp(-S.sandThru/45000);S.cd=.62+.26*Math.min(1,S.sandThru/180000);
+      const padReq=c.sched[0][2]*.8,allowed=c.ppaCap*Math.pow(Math.min(1,S.padClean/padReq),.7)*Math.pow(eff/c.eff0,.6)*Math.pow(Math.min(1,S.Q/c.Qd),.5);
+      S.risk=S.ppaB>0?S.ppaB/Math.max(allowed,.05):0;
+      if(S.risk>1){S.so+=1500*(S.risk-1)*dtm*(1+S.so/1500);if(!S.screen&&S.so>400){S.screen=true;log('ALERTA: la presión neta sube con pendiente fuerte. Inicio de arenamiento. ¡Corta la arena y desplaza!','e');}}
+      else S.so*=Math.exp(-.5*dtm);S.soMax=Math.max(S.soMax,S.so);}
+  }else if(S.broken){S.ppaB=0;S.Vf*=Math.exp(-.02*dtm);}
+  if(S.flushing){const sandSl=S.wb.reduce((a,s)=>a+(s.ppa>0?s.v:0),0);if(sandSl<=0.01){if(S.wbSandClearV===null){S.wbSandClearV=S.Vclean;log('Toda la lechada con arena salió por los punzados. Para las bombas ahora.','g');}S.overflush=S.Vclean-S.wbSandClearV;}}
+  const P=pressures(S.Q);S.parts=P;S.bhpNow=P.bhp;
+  const stp=S.test?S.test.p:P.stp;S.stpNow=stp;if(!S.test)S.maxSTP=Math.max(S.maxSTP,stp);
+  if(S.valve&&S.whp===null&&!S.test)S.whp=P.stp;
+  if(S.broken&&S.Q>0)S.pnet=pnetAt(S.Q)+S.so;
+  if(S.broken&&S.Q>0&&S.pnet>c.contain&&!S.heightWarn){S.heightWarn=true;log('La presión neta superó la contención: la fractura crece en altura fuera de la zona objetivo. Considera bajar el caudal.','w');}
+  if(!S.test&&stp>S.kickSet){S.kick++;for(const p of S.pumps)p.on=false;S.Q=0;S.Qset=0;$('qSet').value=0;log(`KICKOUT: la presión de superficie (${fmt(stp)} psi) superó el kickout de ${fmt(S.kickSet)} psi. Todas las bombas se pararon.`,'e');toast(`⛔ <b>KICKOUT a ${fmt(stp)} psi</b><br>Todas las bombas se pararon. Antes de reanudar, entiende la causa: ¿caudal demasiado alto, sin reductor de fricción o arenamiento?`);}
+  if(S.broken&&S.Q<=0.01&&S.sandForm>0&&!S.shut&&S.Qset===0){S.shut=true;S.isipBHP=P.bhp;S.shutBHP=P.bhp;S.isip=Math.max(0,P.bhp-P.ph);S.isipPh=P.ph;
+    S.sandLeft=S.wb.reduce((a,s)=>a+s.v/(1+ABS*s.ppa)*42*s.ppa,0);S.shutT=0;
+    log(`Bombas paradas. ISIP = ${fmt(S.isip)} psi. Arena en el casing: ${fmt(S.sandLeft)} lb. Sobre-desplazamiento: ${fmt(S.overflush)} bbl. Registrando cierre de 5 minutos…`,'g');}
+  if(S.shut&&S.Q>0){S.shut=false;S.shutBHP=null;S.shutT=0;}
+  if(S.shut&&S.shutBHP){S.shutBHP=c.closure*c.TVD+(S.shutBHP-c.closure*c.TVD)*Math.exp(-dtm/20);}
+  if(S.shut){S.shutT+=dt;if(S.shutT>=300&&!S.isipOk){S.isipOk=true;S.p5=Math.max(0,S.shutBHP-hydro());$('btnEnd').disabled=false;log(`Cierre de 5 min registrado: ISIP ${fmt(S.isip)} psi → ${fmt(S.p5)} psi a los 5 min (declinación ${fmt(S.isip-S.p5)} psi). Ya puedes finalizar la etapa.`,'g');}}
+  if(!S.valve)S.phase=S.test?'Prueba de presión':'Inicio';else if(!S.broken)S.phase=S.Q>0?'Presurizando':'Pozo abierto';else if(S.shut)S.phase='Cierre (ISIP)';else if(S.flushing)S.phase='Desplazamiento';else if(S.sandForm>0||S.ppaS>0)S.phase='Arena';else S.phase=S.rampDone?'Colchón':'Subiendo caudal';
+  S.histT+=dt;if(S.histT>=5){S.histT=0;S.hist.push({t:S.t,stp,bhp:S.valve?P.bhp:null,q:S.Q,ps:S.ppaS||0,pb:S.ppaB||0});if(S.hist.length>4000)S.hist.splice(0,1);}
+}
+function schedPpa(){const v=S.Vclean-S.VcleanBD;let acc=0;for(const [n,p,vol] of S.c.sched){acc+=vol;if(v<acc)return p;}return 0;}
+function schedIdx(){const v=S.Vclean-S.VcleanBD;let acc=0;for(let i=0;i<S.c.sched.length;i++){acc+=S.c.sched[i][2];if(v<acc)return i;}return S.c.sched.length;}
+
+/* ================= CONTROLES ================= */
+function setQ(v){if(!S)return;S.Qset=clamp(Math.round(v),0,+$('qSet').max);$('qSet').value=S.Qset;}
+function setPpa(v){if(!S)return;S.ppaSet=clamp(Math.round(v*4)/4,0,4);$('ppaSet').value=S.ppaSet;if(S.ppaSet>0)$('autoSand').checked=false;}
+$('qSet').oninput=e=>setQ(+e.target.value);$('ppaSet').oninput=e=>setPpa(+e.target.value);
+$('qm').onclick=()=>setQ(S.Qset-5);$('qp').onclick=()=>setQ(S.Qset+5);$('pm').onclick=()=>setPpa(S.ppaSet-.25);$('pp').onclick=()=>setPpa(S.ppaSet+.25);
+$('frSel').onchange=e=>{if(S){S.fr=+e.target.value;log(`Reductor de fricción ajustado a ${S.fr} gpt.`);}};
+$('btnTest').onclick=()=>{if(!S||S.valve||S.test||S.repairing>0||S.testDone)return;if(!S.checkDone){log('INDISPENSABLE: completa primero la lista pre-operativa.','w');openCheck();return;}S.test={stage:'low',ph:'up',p:0,leak:false};log(`Prueba de presión iniciada con la válvula maestra cerrada: BAJA a 1.000 psi y luego ALTA a ${fmt(S.hiTest)} psi.`);};
+$('btnCheck').onclick=()=>openCheck();
+$('btnRepair').onclick=()=>{if(!S||!S.test||S.test.ph!=='fail')return;S.repairing=120;S.test={stage:'high',ph:'ok',p:S.test.p};log('Despresurizando… ajustando la unión con fuga (2 min). Después se repite la prueba completa.');};
+$('btnValve').onclick=()=>{if(!S)return;if(!S.valve){if(S.test&&S.test.ph==='ok')S.test=null;if(S.test){log('Termina la prueba de presión antes de abrir el pozo.','w');return;}
+  if(!S.checkDone){log('INDISPENSABLE: completa la lista pre-operativa.','w');openCheck();return;}if(!S.testDone){log('INDISPENSABLE: el pozo no se abre sin las pruebas de BAJA y ALTA aprobadas.','e');return;}
+  S.valve=true;const P=pressures(0);S.whp=P.stp;log(`Válvula maestra abierta. WHP = ${fmt(P.stp)} psi (presión poral ${fmt(S.c.pore*S.c.TVD)} − hidrostática ${fmt(P.ph)}). Regístrala en la hoja de seguimiento.`);}
+  else{if(S.Q>0){log('No cierres la válvula con caudal: primero para las bombas.','w');return;}S.valve=false;log('Válvula maestra cerrada.');}};
+$('btnAcid').onclick=()=>{if(!S||!S.valve||S.broken||S.acidPend>0||S.acidDone)return;S.acidPend=24;S.acidDone=true;log('Spearhead de ácido 15% HCl: 24 bbl. Para que llegue a los punzados hay que desplazarlo con el volumen del pozo.');};
+function doFlush(auto){if(!S||!S.broken||S.flushing)return;S.flushing=true;S.flushStart=S.Vclean;$('autoSand').checked=false;S.ppaSet=0;$('ppaSet').value=0;
+  const sandSl=S.wb.reduce((a,s)=>a+(s.ppa>0?s.v:0),0);log(`${auto?'Programa de arena completo. ':''}Arena cortada: desplazamiento iniciado. Volumen del pozo: ${fmt(S.c.cap*S.c.MD)} bbl. Lechada con arena todavía en el casing: ${fmt(sandSl)} bbl.`);}
+$('btnFlush').onclick=()=>doFlush(false);
+$('btnStop').onclick=()=>{if(!S)return;const sandSl=S.wb.reduce((a,s)=>a+(s.ppa>0?s.v:0),0);
+  if(S.broken&&!S.shut&&S.Q>0&&sandSl>0.5&&performance.now()-S.stopAsk>6000){S.stopAsk=performance.now();log(`ATENCIÓN: quedan ${fmt(sandSl)} bbl de lechada con arena en el casing. Si paras ahora queda arena en el pozo y el desplazamiento (indispensable) no se cumple. Toca «Parar bombas» otra vez para confirmar.`,'w');return;}
+  setQ(0);log('Parada de bombas solicitada.');};
+$('btnEnd').onclick=()=>{if(S&&S.isipOk)finish();};
+$('btnFleet').onclick=()=>{if(S)openFleet();};
+$('allOn').onclick=()=>{if(!S)return;if(!S.checkDone){log('INDISPENSABLE: completa la lista pre-operativa antes de poner bombas en línea.','w');openCheck();return;}S.pumps.forEach(p=>{if(!p.dead&&!p.maint&&!p.issue)p.on=true;});buildPumps();};
+$('allOff').onclick=()=>{if(!S)return;S.pumps.forEach(p=>{if(p.issue&&p.on&&!p.dead)S.issuesHandled++;p.on=false;});buildPumps();};
+document.querySelectorAll('#speed button').forEach(b=>b.onclick=()=>{speed=+b.dataset.s;document.querySelectorAll('#speed button').forEach(x=>x.classList.toggle('on',x===b));});
+function buildPumps(){const el=$('pumps');el.innerHTML='';S.pumps.forEach(p=>{const d=document.createElement('div');d.dataset.i=p.id;d.innerHTML=`<span class="wr"></span><b>B${p.id}</b><span class="st"></span><div class="hb"><i></i></div>`;d.onclick=()=>openPump(p);el.appendChild(d);});refreshPumps();}
+function refreshPumps(){document.querySelectorAll('#pumps>div').forEach(d=>{const p=S.pumps[d.dataset.i-1];d.className='pump'+(p.on?' on':'')+(p.issue&&!p.dead?' issue':'')+(p.dead?' dead':'')+(p.maint?' maint':'');
+  d.querySelector('.st').textContent=p.dead?'fuera de servicio':p.maint?`mant. ${Math.ceil(p.maint/60)} min`:p.issue?(p.on?'⚠ falla':'aislada · falla'):p.on?(S.Q>0?(S.Q/Math.max(.01,S.pumps.reduce((a,q)=>a+pumpRate(q),0))*p.h).toFixed(1)+' bpm':'en línea'):'disponible';
+  const cd=pumpCond(p);const hb=d.querySelector('.hb i');hb.style.width=cd*100+'%';hb.style.background=cd>=1?'var(--grn)':cd>.5?'var(--yel)':'var(--red)';d.title=`Estado ${Math.round(cd*100)}%`;
+  d.querySelector('.wr').textContent=p.issue&&!p.dead?'⚠':pumpPM(p).length&&!p.dead?'🔧':'';});}
+
+/* ================= PANEL DE BOMBA Y ORDEN DE MANTENIMIENTO ================= */
+let curPump=null;
+function openPump(p){curPump=p;renderPump();$('ovPump').classList.remove('hidden');}
+
+/* ===== Ilustraciones de componentes (vista previa) ===== */
+const CIMG={
+ valv:(lbl)=>`<svg viewBox="0 0 120 90"><rect x="56" y="6" width="8" height="26" rx="2" fill="var(--steel)"/><path d="M28 32h64l-8 16H36z" fill="var(--steel)"/><path d="M34 44h52l-4 8H38z" fill="var(--sand)"/><path d="M44 52l-6 26M60 52v28M76 52l6 26" stroke="var(--steel)" stroke-width="5" stroke-linecap="round"/><text x="60" y="88" text-anchor="middle" font-size="9" fill="var(--mu)">${lbl}</text></svg>`,
+ seat:(lbl)=>`<svg viewBox="0 0 120 90"><ellipse cx="60" cy="30" rx="44" ry="14" fill="var(--steel)"/><ellipse cx="60" cy="30" rx="26" ry="8" fill="var(--bg)"/><path d="M16 30v22c0 8 20 14 44 14s44-6 44-14V30c0 8-20 14-44 14S16 38 16 30z" fill="color-mix(in srgb,var(--steel) 70%,var(--bg))"/><path d="M34 30l6-6h40l6 6" stroke="var(--tx)" stroke-width="1.5" fill="none" opacity=".6"/><text x="60" y="86" text-anchor="middle" font-size="9" fill="var(--mu)">${lbl}</text></svg>`,
+ seal:()=>`<svg viewBox="0 0 120 90"><ellipse cx="60" cy="42" rx="42" ry="20" fill="none" stroke="var(--sand)" stroke-width="12"/><ellipse cx="60" cy="38" rx="42" ry="20" fill="none" stroke="color-mix(in srgb,var(--sand) 70%,var(--tx))" stroke-width="3" opacity=".7"/><text x="60" y="86" text-anchor="middle" font-size="9" fill="var(--mu)">inserto de uretano</text></svg>`,
+ spring:()=>`<svg viewBox="0 0 120 90"><path d="M30 14 ${Array.from({length:8},(_,i)=>`L${i%2?30:90} ${18+i*7}`).join(' ')} L60 76" fill="none" stroke="var(--steel)" stroke-width="5" stroke-linejoin="round"/><text x="60" y="88" text-anchor="middle" font-size="9" fill="var(--mu)">resorte de válvula</text></svg>`,
+ packing:()=>`<svg viewBox="0 0 120 90">${[0,1,2,3].map(i=>`<path d="M20 ${16+i*15}h80l-6 10H26z" fill="${i%3?'var(--brn)':'color-mix(in srgb,var(--steel) 80%,var(--bg))'}" stroke="var(--bg)"/>`).join('')}<text x="60" y="88" text-anchor="middle" font-size="9" fill="var(--mu)">anillos de empaquetadura</text></svg>`,
+ plunger:()=>`<svg viewBox="0 0 120 90"><rect x="8" y="30" width="96" height="26" rx="6" fill="var(--steel)"/><rect x="12" y="34" width="88" height="6" rx="3" fill="var(--tx)" opacity=".5"/><rect x="100" y="34" width="14" height="18" rx="2" fill="color-mix(in srgb,var(--steel) 60%,var(--bg))"/><text x="60" y="80" text-anchor="middle" font-size="9" fill="var(--mu)">émbolo con recubrimiento duro</text></svg>`,
+ cover:()=>`<svg viewBox="0 0 120 90"><circle cx="60" cy="40" r="32" fill="color-mix(in srgb,var(--steel) 70%,var(--bg))"/><circle cx="60" cy="40" r="26" fill="none" stroke="var(--red)" stroke-width="5"/><circle cx="60" cy="40" r="10" fill="var(--steel)"/><text x="60" y="86" text-anchor="middle" font-size="9" fill="var(--mu)">tapa + o-ring</text></svg>`,
+ fe:()=>`<svg viewBox="0 0 120 90"><rect x="8" y="14" width="104" height="58" rx="6" fill="color-mix(in srgb,var(--steel) 55%,var(--bg))" stroke="var(--steel)"/>${[0,1,2,3,4].map(i=>`<circle cx="${20+i*20}" cy="43" r="7" fill="var(--bg)" stroke="var(--steel)" stroke-width="2"/>`).join('')}<text x="60" y="86" text-anchor="middle" font-size="9" fill="var(--mu)">bloque del fluid end</text></svg>`,
+ lube:()=>`<svg viewBox="0 0 120 90"><rect x="22" y="16" width="38" height="56" rx="8" fill="var(--blue)"/><rect x="22" y="12" width="38" height="8" rx="3" fill="var(--steel)"/><path d="M88 22c10 14 14 22 14 30a14 14 0 0 1-28 0c0-8 4-16 14-30z" fill="var(--yel)"/><text x="60" y="86" text-anchor="middle" font-size="9" fill="var(--mu)">filtro + aceite</text></svg>`};
+const RIMG={sello:()=>CIMG.seal(),valvula_succion:()=>CIMG.valv('válvula de succión'),asiento_succion:()=>CIMG.seat('asiento de succión'),valvula_descarga:()=>CIMG.valv('válvula de descarga'),asiento_descarga:()=>CIMG.seat('asiento de descarga'),
+ resorte:()=>CIMG.spring(),packing:()=>CIMG.packing(),embolo:()=>CIMG.plunger(),sello_tapa:()=>CIMG.cover(),fluid_end:()=>CIMG.fe(),lubricacion:()=>CIMG.lube()};
+const RWHY={sello:'Solo el inserto de uretano, si el metal está sano.',valvula_succion:'Deja entrar la lechada al cilindro.',asiento_succion:'Asiento donde cierra la válvula de succión.',valvula_descarga:'Deja salir el fluido a alta presión.',asiento_descarga:'Asiento donde cierra la válvula de descarga.',resorte:'Cierra la válvula a tiempo en cada carrera.',packing:'Sella el émbolo contra el bloque.',embolo:'Desplaza el fluido; se raya si falla el packing.',sello_tapa:'Sella la tapa frontal del cilindro.',fluid_end:'Bloque con las cámaras: cambio mayor (240 min).',lubricacion:'Filtro, aceite y bomba de aceite del power end.'};
+const ALL100=['valvula_succion','asiento_succion','valvula_descarga','asiento_descarga','resorte','packing','embolo','sello_tapa','fluid_end','lubricacion'];
+const GFIX=Object.assign({},PMFIX);
+function pumpCond(p){if(p.dead)return 0;const w=Math.max(...Object.keys(LIFE).map(g=>pumpWear(p,g)));let c=w<.7?1:Math.max(.05,1-(w-.7)/.3*.85);if(p.issue)c=Math.min(c,.3);return c;}
+function pumpTodo(p){const L=Object.keys(LIFE).map(g=>({g,w:pumpWear(p,g)})).filter(x=>x.w>=.7).sort((a,b)=>b.w-a.w);const keys=[];
+  if(p.issue)FAIL[p.issue.type].fix.forEach(k=>keys.push({k,lvl:'must',why:`Falla en el cilindro ${p.issue.cyl}`}));
+  L.forEach(x=>GFIX[x.g].forEach(k=>{if(!keys.some(y=>y.k===k))keys.push({k,lvl:x.w>=.85?'must':'soon',why:`${GRP[x.g]} al ${Math.round(x.w*100)}% de su vida`});}));return keys;}
+function prevCards(list){return `<div class="prevw">${list.map(x=>`<div class="pc ${x.lvl||''}">${RIMG[x.k]()}<b>${REP[x.k][0]}</b><small>${x.why||RWHY[x.k]}</small></div>`).join('')}</div>`;}
+function renderPump(msg){const p=curPump,adv=$('optDiag').checked;if(!p)return;const f=p.issue?FAIL[p.issue.type]:null,pm=pumpPM(p);
+  const st=p.dead?'FUERA DE SERVICIO':p.maint?`EN MANTENIMIENTO (${Math.ceil(p.maint/60)} min)`:p.issue?'FALLA ACTIVA':p.on?'EN LÍNEA':'DISPONIBLE';
+  let h=`<div class="row" style="justify-content:space-between"><h2>Bomba ${p.id}</h2><span><span class="condb" style="color:${pumpCond(p)>=1?'var(--grn)':pumpCond(p)>.5?'var(--yel)':'var(--red)'}">${Math.round(pumpCond(p)*100)}%</span> <span class="badge ${p.issue||p.dead?'no':'ok'}">${st}</span></span></div><div class="muted">${p.model} · ${S.c.ps.m.cyl} cilindros · ${S.c.ps.qmax.toFixed(1)} bpm máx. · ${fmt(S.c.ps.pmax)} psi máx.</div>`;
+  if(p.dead)h+=`<div class="diag">Daño mayor: ${p.deadWhy||'—'}. La bomba queda fuera de servicio por el resto de la etapa (en la realidad, va al taller).</div>`;
+  else if(f)h+=`<div class="diag"><b>⚠ Cilindro ${p.issue.cyl}${adv?'':': '+f.t}</b><br>Síntoma: ${f.sym}${adv?'':`<br>Causa: ${f.why}<br><b>Qué cambiar exactamente:</b> ${f.fix.map(x=>REP[x][0]).join(' + ')} (cilindro ${p.issue.cyl}).`}<br><span class="muted">Si no se atiende, ${f.next?'la falla empeora':'la bomba sufre un daño mayor'} en ${Math.max(0,Math.ceil((f.esc-p.issue.t)/60))} min de bombeo.</span></div>`;
+  else if(pm.length)h+=`<div class="diag" style="background:color-mix(in srgb,var(--yel) 10%,var(--bg));border-color:color-mix(in srgb,var(--yel) 48%,var(--bg))">🔧 Mantenimiento preventivo recomendado: ${pm.map(g=>GRP[g]).join(', ')} superaron el 85% de su vida útil.</div>`;
+  else h+=`<div class="diag ok">✔ Sin fallas. Componentes dentro de su vida útil.</div>`;
+  h+=`<h3 style="margin-top:12px">Horas de componentes</h3><div class="comp">${Object.keys(LIFE).map(g=>{const w=pumpWear(p,g);return `<span>${GRP[g]}</span><div class="bar"><i style="width:${clamp(w,0,1)*100}%;background:${w>=.85?'var(--red)':w>=.7?'var(--yel)':'var(--grn)'}"></i></div><span class="num">${fmt(p.hrs[g])}/${LIFE[g]} h</span>`;}).join('')}</div>`;
+  if(msg)h+=`<div class="${msg.ok?'diag ok':'diag'}">${msg.t}</div>`;
+  if(!p.dead&&!p.maint){h+=`<div class="row" style="margin:10px 0">${p.on?'<button class="btn" id="pOff">Sacar de línea</button>':`<button class="btn grn" id="pOn">Poner en línea</button>`}</div>`;
+    if(!p.on){const todo=pumpTodo(p);
+      h+=todo.length?`<div class="recbox"><b>🔧 Recomendación: cambia esto${p.issue?` (cilindro ${p.issue.cyl})`:''}</b>${prevCards(todo)}<div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn pri sm" data-kit="${todo.map(x=>x.k).join(',')}">Cargar recomendación en la orden</button><button class="btn sm" data-kit="${ALL100.join(',')}">Dejar al 100% (todo)</button></div></div>`
+        :`<div class="diag ok">✔ Bomba al ${Math.round(pumpCond(p)*100)}%: no hay nada recomendado para cambiar. ${Math.max(...Object.keys(LIFE).map(g=>pumpWear(p,g)))>.01?'Si igual quieres renovarla, usa «Dejar al 100% (todo)».':''}</div>`;
+      h+=`<h3 style="margin-top:6px">Orden de mantenimiento</h3>
+      <label class="loto"><input type="checkbox" id="mLoto"><span><b>Bomba aislada y bloqueada (LOTO) — indispensable</b><br>Válvulas tapón de succión y descarga cerradas, presión purgada a 0 psi y verificada, motor/transmisión bloqueados con candado y tarjeta.</span></label>
+      <div class="row"><span class="hint">Cilindro:</span><select id="mCyl" class="btn sm">${Array.from({length:S.c.ps.m.cyl},(_,i)=>i+1).map(i=>`<option ${p.issue&&p.issue.cyl===i?'selected':''}>${i}</option>`).join('')}</select>
+      <span class="hint">Atajos:</span><button class="btn sm" data-kit="sello">Solo sellos</button><button class="btn sm" data-kit="valvula_succion,asiento_succion">Kit succión</button><button class="btn sm" data-kit="valvula_descarga,asiento_descarga">Kit descarga</button><button class="btn sm" data-kit="packing">Packing</button><button class="btn sm" data-kit="embolo,packing">Émbolo + packing</button><button class="btn sm" data-kit="${ALL100.join(',')}">Dejar al 100%</button>${pm.length?`<button class="btn sm" data-kit="${[...new Set(pm.flatMap(g=>PMFIX[g]))].join(',')}">Preventivo recomendado</button>`:''}</div>
+      <div class="rep">${Object.entries(REP).map(([k,[l,m]])=>`<label title="${RWHY[k]}"><input type="checkbox" data-r="${k}"><span class="th">${RIMG[k]()}</span> ${l}<small>${m} min</small></label>`).join('')}</div>
+      <div id="mPrev"></div>
+      <div class="row"><button class="btn pri" id="mGo">Ejecutar mantenimiento</button><span class="hint" id="mTime"></span></div>`;}
+    else h+=`<div class="hint">Para abrir la orden de mantenimiento, primero saca la bomba de línea.</div>`;}
+  h+=`<div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn" id="pClose">Cerrar</button></div>`;
+  $('pumpBody').innerHTML=h;$('pClose').onclick=()=>{$('ovPump').classList.add('hidden');curPump=null;};
+  if($('pOn'))$('pOn').onclick=()=>{if(!S.checkDone){renderPump({t:'INDISPENSABLE: completa la lista pre-operativa antes de poner bombas en línea.'});return;}if(p.issue){renderPump({t:'No pongas en línea una bomba con falla activa: primero ejecuta el mantenimiento.'});return;}p.on=true;refreshPumps();renderPump();};
+  if($('pOff'))$('pOff').onclick=()=>{if(p.issue){S.issuesHandled++;log(`Bomba ${p.id} sacada de línea con la falla detectada (cilindro ${p.issue.cyl}).`,'g');}p.on=false;refreshPumps();renderPump();};
+  const upd=()=>{const ch=[...document.querySelectorAll('#pumpBody [data-r]:checked')].map(x=>x.dataset.r);if($('mPrev'))$('mPrev').innerHTML=ch.length?`<h3 style="margin-top:6px">Vista previa de lo que vas a cambiar</h3>${prevCards(ch.map(k=>({k})))}`:'';$('mTime').textContent=ch.length?`Tiempo estimado: ${5+ch.reduce((a,k)=>a+REP[k][1],0)} min (incluye 5 min de aislamiento)`:'';};
+  document.querySelectorAll('#pumpBody [data-r]').forEach(x=>x.onchange=upd);
+  document.querySelectorAll('#pumpBody [data-kit]').forEach(b=>b.onclick=()=>{const ks=b.dataset.kit.split(',');document.querySelectorAll('#pumpBody [data-r]').forEach(x=>x.checked=ks.includes(x.dataset.r));if($('mLoto'))$('mLoto').checked=true;upd();if($('mGo'))$('mGo').scrollIntoView({block:'center',behavior:'smooth'});});
+  if($('mTime'))upd();
+  if($('mGo'))$('mGo').onclick=()=>{const ch=[...document.querySelectorAll('#pumpBody [data-r]:checked')].map(x=>x.dataset.r);
+    if(!$('mLoto').checked){renderPumpKeep('INDISPENSABLE: confirma el aislamiento y bloqueo (LOTO) antes de intervenir la bomba.');return;}
+    if(!ch.length){renderPumpKeep('Selecciona al menos un componente para cambiar.');return;}
+    const cyl=+$('mCyl').value,mins=5+ch.reduce((a,k)=>a+REP[k][1],0);p.maint=mins*60;p.pending={ch,cyl,issue:p.issue?{...p.issue}:null};
+    log(`Orden de mantenimiento — Bomba ${p.id}, cilindro ${cyl}: ${ch.map(k=>REP[k][0]).join(' + ')}. Tiempo estimado ${mins} min.`);refreshPumps();renderPump();};}
+function renderPumpKeep(t){const ch=[...document.querySelectorAll('#pumpBody [data-r]:checked')].map(x=>x.dataset.r),loto=$('mLoto')&&$('mLoto').checked,cyl=$('mCyl')&&$('mCyl').value;
+  renderPump({t});document.querySelectorAll('#pumpBody [data-r]').forEach(x=>x.checked=ch.includes(x.dataset.r));if($('mLoto'))$('mLoto').checked=loto;if($('mCyl'))$('mCyl').value=cyl;}
+function finishMaint(p){const {ch,cyl,issue}=p.pending||{ch:[],cyl:1,issue:null};p.pending=null;const have=new Set(ch);ch.forEach(k=>(COVERS[k]||[]).forEach(x=>have.add(x)));
+  const rs={sello:()=>{p.hrs.vs*=.8;},valvula_succion:()=>{p.hrs.vs*=.5;},asiento_succion:()=>{p.hrs.vs*=.5;},valvula_descarga:()=>{p.hrs.vd*=.5;},asiento_descarga:()=>{p.hrs.vd*=.5;},resorte:()=>{p.hrs.vd*=.85;},packing:()=>{p.hrs.pk=0;},embolo:()=>{p.hrs.pl=0;},sello_tapa:()=>{p.hrs.tapa=0;},fluid_end:()=>{p.hrs.fe=0;},lubricacion:()=>{p.hrs.pe=0;}};
+  ch.forEach(k=>rs[k]&&rs[k]());if(ch.includes('valvula_succion')&&ch.includes('asiento_succion'))p.hrs.vs=0;if(ch.includes('valvula_descarga')&&ch.includes('asiento_descarga'))p.hrs.vd=0;if(ALL100.every(k=>ch.includes(k)))for(const g in LIFE)p.hrs[g]=0;if(have.has('valvula_succion')&&have.has('asiento_succion'))p.hrs.vs=0;if(have.has('valvula_descarga')&&have.has('asiento_descarga'))p.hrs.vd=0;
+  const order={t:S.t,pump:p.id,cyl,issue:issue?FAIL[issue.type].t:'Preventivo',ch:ch.map(k=>REP[k][0]),ok:true,note:''};let msg;
+  if(issue){const f=FAIL[issue.type],miss=f.fix.filter(n=>!have.has(n)),extra=ch.filter(k=>!f.fix.includes(k)&&!(COVERS[k]||[]).some(x=>f.fix.includes(x))),wrongCyl=cyl!==issue.cyl;
+    if(wrongCyl){order.ok=false;order.note=`Se intervino el cilindro ${cyl}, pero la falla estaba en el cilindro ${issue.cyl}.`;S.repBad++;p.issue.t=0;msg=`✖ Bomba ${p.id}: ${order.note} La falla sigue activa.`;}
+    else if(miss.length){order.ok=false;const why=miss.map(m=>MISSMSG[issue.type+'|'+ch.find(k=>f.fix.includes(k))]||('Faltó cambiar: '+REP[m][0]+'.')).filter((v,i,a)=>a.indexOf(v)===i).join(' ');order.note=why;S.repBad++;p.issue.t=0;msg=`✖ Bomba ${p.id}: reparación incompleta. ${why} La falla volverá al ponerla en línea.`;}
+    else{p.issue=null;p.h=1;S.repOk++;order.note=extra.length?`Correcto. Además se cambiaron piezas que no hacían falta: ${extra.map(k=>REP[k][0]).join(', ')} (más tiempo y costo).`:'Correcto: se cambió exactamente lo necesario.';msg=`✔ Bomba ${p.id} reparada. ${order.note}`;}}
+  else{order.note='Mantenimiento preventivo: se reiniciaron las horas de los componentes cambiados.';msg=`✔ Bomba ${p.id}: ${order.note}`;}
+  if(order.ok&&!p.issue){const td=pumpTodo(p),cd=Math.round(pumpCond(p)*100);msg+=td.length?` Estado: ${cd}%. Te recomiendo además cambiar: ${td.map(x=>REP[x.k][0]).join(', ')} (abre la bomba y usa «Cargar recomendación»).`:` ✔ Bomba al 100%: nada pendiente, lista para poner en línea.`;}
+  S.orders.push(order);log(msg,order.ok?'g':'e');toast(msg,7000);refreshPumps();if(curPump===p)renderPump({t:msg,ok:order.ok});}
+
+
+/* ================= REVISIÓN DE FLOTA (inicio de etapa) ================= */
+const f50=x=>Math.floor(x/50)*50;
+function recKick(){const c=S.c;return f50(Math.max(c.maxP*.86,Math.min(c.maxP,c.ps.pmax)*.96));}
+function recPop(){const c=S.c,k=recKick();return Math.min(c.ironP,k+1000);}
+function pumpRec(p){const L=Object.keys(LIFE).map(g=>({g,w:pumpWear(p,g)})).sort((a,b)=>b.w-a.w),must=L.filter(x=>x.w>=.85),soon=L.filter(x=>x.w>=.7&&x.w<.85);
+  return {max:L[0].w,must,soon,lvl:must.length?'bad':soon.length?'warn':'ok'};}
+function fullPM(p,why){const ch=[...new Set(Object.values(PMFIX).flat())];for(const g in LIFE)p.hrs[g]=0;p.issue=null;p.h=1;p.dead=false;
+  S.orders.push({t:S.t,pump:p.id,cyl:'todos',issue:why||'Preventivo pre-etapa (dejar al 100%)',ch:ch.map(k=>REP[k][0]),ok:true,note:'Bomba al 100%: válvulas, asientos, packing, émbolos, sellos de tapa, fluid end revisado y lubricación del power end. LOTO confirmado. Hecho antes de presurizar: no consume tiempo de bombeo.'});}
+function partPM(p){const r=pumpRec(p),gs=[...r.must,...r.soon].map(x=>x.g);if(!gs.length)return false;const ch=[...new Set(gs.flatMap(g=>PMFIX[g]))];gs.forEach(g=>p.hrs[g]=0);
+  S.orders.push({t:S.t,pump:p.id,cyl:'todos',issue:'Preventivo pre-etapa (recomendado)',ch:ch.map(k=>REP[k][0]),ok:true,note:'Se cambiaron los componentes con más del 70% de su vida. LOTO confirmado.'});return true;}
+function openFleet(){if(!S)return;const c=S.c;if(S.autoOnline===undefined)S.autoOnline=true;
+  const rows=S.pumps.map(p=>{const r=pumpRec(p),txt=r.must.length?'<b style="color:var(--red)">Cambiar ya:</b> '+r.must.map(x=>`${GRP[x.g]} (${Math.round(x.w*100)}%)`).join(', '):'',
+    t2=r.soon.length?'<b style="color:var(--yel)">Conviene cambiar:</b> '+r.soon.map(x=>`${GRP[x.g]} (${Math.round(x.w*100)}%)`).join(', '):'',
+    st=p.dead?'Fuera de servicio':r.lvl==='ok'?'<span style="color:var(--grn)">✔ Lista</span>':r.lvl==='warn'?'<span style="color:var(--yel)">Recomendado</span>':'<span style="color:var(--red)">🔧 Necesaria</span>';
+    return `<tr><td><b>B${p.id}</b></td><td><div class="bar" style="height:6px;background:var(--p3);border-radius:3px;overflow:hidden;width:90px"><i style="display:block;height:100%;width:${Math.round((1-Math.min(1,r.max))*100)}%;background:${r.lvl==='bad'?'var(--red)':r.lvl==='warn'?'var(--yel)':'var(--grn)'}"></i></div><small class="muted">${Math.round((1-Math.min(1,r.max))*100)}% de vida en la pieza más gastada</small></td><td>${st}</td><td style="font-size:12.5px">${txt}${txt&&t2?'<br>':''}${t2}${!txt&&!t2?'<span class="muted">Todos los componentes por debajo del 70%</span>':''}</td><td><button class="btn sm" data-full="${p.id}" ${r.max<.02?'disabled':''}>Dejar al 100%</button></td></tr>`;}).join('');
+  const nb=S.pumps.filter(p=>pumpRec(p).lvl==='bad').length,nw=S.pumps.filter(p=>pumpRec(p).lvl==='warn').length;
+  $('fleetBody').innerHTML=`<h2>🔧 Revisión de flota antes de la etapa</h2>
+   <div class="muted">${c.pumps} × ${c.model}. Antes de presurizar se mantiene sin costo de tiempo de bombeo. <b>Recomendación:</b> ${nb||nw?`deja al 100% las ${nb+nw} bomba(s) marcadas (${nb} necesarias, ${nw} recomendadas)`:'la flota está en condiciones'}${nb+nw?' — o toda la flota, para correr la etapa sin sorpresas':''}.</div>
+   <div class="row" style="margin:10px 0;flex-wrap:wrap;gap:8px"><button class="btn pri" id="flAll">✔ Mantenimiento completo: toda la flota al 100%</button><button class="btn" id="flRec">Solo lo recomendado (≥70%)</button></div>
+   <div style="overflow:auto;max-height:46vh"><table class="ktab"><tr><th>Bomba</th><th>Estado</th><th></th><th>Qué hay que cambiar</th><th></th></tr>${rows}</table></div>
+   <label class="loto" style="margin-top:10px"><input type="checkbox" id="flOn" ${S.autoOnline?'checked':''}><span><b>Poner en línea todas las bombas disponibles al completar la lista pre-operativa</b><br>El caudal recién arranca cuando abres el pozo y fijas el caudal, así que no hay riesgo.</span></label>
+   <div class="row" style="justify-content:space-between;margin-top:10px"><button class="btn" id="flPlan">🎯 Ver el plan para una etapa efectiva</button><button class="btn pri" id="flGo">Continuar a la lista pre-operativa →</button></div>`;
+  $('ovFleet').classList.remove('hidden');
+  document.querySelectorAll('#fleetBody [data-full]').forEach(b=>b.onclick=()=>{const p=S.pumps[+b.dataset.full-1];fullPM(p);log(`Bomba ${p.id} dejada al 100% (preventivo completo pre-etapa).`,'g');refreshPumps();openFleet();});
+  $('flAll').onclick=()=>{S.pumps.forEach(p=>fullPM(p,'Preventivo pre-etapa: flota completa al 100%'));log(`Mantenimiento completo pre-etapa: las ${S.pumps.length} bombas quedaron al 100%.`,'g');toast('✔ Toda la flota quedó al 100%.',5000);refreshPumps();openFleet();};
+  $('flRec').onclick=()=>{const n=S.pumps.filter(p=>partPM(p)).length;log(`Preventivo recomendado pre-etapa en ${n} bomba(s).`,'g');refreshPumps();openFleet();};
+  $('flOn').onchange=()=>{S.autoOnline=$('flOn').checked;};
+  $('flPlan').onclick=()=>{const d=$('planCard');if(d){d.open=true;}$('ovFleet').classList.add('hidden');setTimeout(()=>{d&&d.scrollIntoView({behavior:'smooth',block:'start'});},50);};
+  $('flGo').onclick=()=>{$('ovFleet').classList.add('hidden');openCheck();};}
+function drawPlan(){if(!S||!$('planBody'))return;const c=S.c,k=recKick(),pp=recPop(),ph=.052*8.4*c.TVD,whp=c.pore*c.TVD-ph,V=c.cap*c.MD,pad=c.sched[0][2],
+  qb=c.TVD<8000?8:12,stpEst=Math.min(k*.85,c.maxP*.8),qp=pumpQatP(c.ps,stpEst),np=Math.ceil(c.Qd/qp);
+  const P=[['Flota al 100%',`En la revisión de flota usa «Mantenimiento completo». Bomba que entra gastada falla en plena arena, cuando más HHP necesitas.`],
+   ['Lista pre-operativa',`Kickout <b>${fmt(k)} psi</b> y pop-off <b>${fmt(pp)} psi</b>, o usa «Usar recomendados». El kickout nunca por encima de ${fmt(Math.min(c.maxP,c.ps.pmax))} psi.`],
+   ['Prueba de presión',`Baja 1.000 psi (≤25 psi de caída) y alta a ~${fmt(Math.min(pp-250,k+500))} psi (≤100 psi). Si falla: «Despresurizar y ajustar» y repetir.`],
+   ['Abrir el pozo',`Anota la WHP: espera ~${fmt(whp)} psi.`],
+   ['Rotura',`Con 3–4 bombas, ${qb} bpm. Mira el pico y la caída brusca de presión. Si te acercas al kickout sin romper: ácido 15%.`],
+   ['Subir el caudal',`En escalones de 10–15 bpm hasta <b>${c.Qd} bpm</b>, esperando que la presión se estabilice. Mantén la presión por debajo del 90% del kickout (${fmt(k*.9)} psi). Necesitas ~${np} bombas + 2 de reserva.`],
+   ['Colchón completo',`${fmt(pad)} bbl limpios antes de la primera arena. El simulador no te deja agregar arena antes.`],
+   ['Arena',`Deja «Arena automática» y vigila el <b>riesgo de arenamiento</b>: arriba de 70%, mantén el ppa (desactiva el automático) o baja 0,25 ppa; si la presión sube rápido, corta arena y desplaza.`],
+   ['Fallas de bomba',`Apenas suena la alarma: sácala de línea, orden de mantenimiento con el kit que indica el diagnóstico y LOTO. Las de reserva compensan el caudal.`],
+   ['Desplazamiento',`«Cortar arena y desplazar»: el pozo tiene <b>${fmt(V)} bbl</b>. Para las bombas cuando la arena sale del casing (sobre-desplazar menos del 10%).`],
+   ['Cierre y FG',`Espera 5 minutos de cierre, anota el ISIP y calcula FG = (ISIP + ${fmt(ph)}) ÷ ${fmt(c.TVD)}. Luego «Finalizar etapa».`]];
+  $('planBody').innerHTML='<ol style="margin:4px 0;padding-left:20px;line-height:1.5;font-size:13px">'+P.map(([t,d])=>`<li style="margin:4px 0"><b>${t}:</b> ${d}</li>`).join('')+'</ol><div class="row" style="margin-top:6px"><button class="btn sm" id="planFleet">🔧 Abrir revisión de flota</button></div>';
+  $('planFleet').onclick=openFleet;}
+/* ================= LISTA PRE-OPERATIVA ================= */
+function checkItems(){const c=S.c,water=Math.round(c.sched.reduce((a,x)=>a+x[2],0)+c.cap*c.MD),pm=S.pumps.filter(p=>pumpPM(p).length).length;return [
+ ['jsa','Charla de seguridad (JSA) y zona roja delimitada','Todos conocen los riesgos, la parada de emergencia y el punto de reunión. Nadie entra a la zona roja con presión en las líneas.'],
+ ['restr','Restricciones instaladas en las líneas de alta (cadenas o eslingas)','Si una unión falla, la restricción evita el latigazo del iron.'],
+ ['align','Alineación de válvulas verificada (manifold, cabeza y purga)','Una válvula cerrada aguas abajo con bombas en marcha genera una sobrepresión instantánea.'],
+ ['prime','Bombas cebadas y blender con presión de descarga estable','Sin cebado ni presión de carga, las bombas cavitan y dañan el fluid end.'],
+ ['plunger',`Bomba y émbolo verificados: ${c.ps.m.n}, émbolo ${String(c.ps.d).replace('.',',')}" → máx. ${fmt(c.ps.pmax)} psi y ${c.ps.qmax.toFixed(1)} bpm por bomba`,'La presión máxima de una bomba la fija el émbolo: rod load ÷ área del émbolo. Émbolo más grande = más caudal pero menos presión.'],
+ ['hours',`Horas de componentes revisadas (${pm} bomba(s) con 🔧 mantenimiento recomendado)`,'Las bombas con válvulas, asientos o packing al final de su vida fallan durante la etapa. Lo ideal es mantenerlas antes de presurizar.'],
+ ['fluids',`Volúmenes verificados: agua ≥ ${fmt(water)} bbl (${met(water,'bbl')}) y arena ≥ ${fmt(S.sandDesign)} lb (${met(S.sandDesign,'lb')})`,'Quedarse sin agua o sin arena a mitad de la etapa obliga a desplazar antes de tiempo.'],
+ ['chem','Químicos cargados y dosificadoras de FR calibradas','Sin reductor de fricción, la fricción en el casing se triplica.'],
+ ['data','Transductores calibrados y radio probada con el personal de campo','Las decisiones se toman con los datos de la cabina.']];}
+function openCheck(){if(!S)return;const c=S.c,kMin=Math.round(c.maxP*.85),kMax=Math.min(c.maxP,c.ps.pmax),its=checkItems();
+  $('checkBody').innerHTML=`<h2>📋 Lista pre-operativa</h2><div class="muted">Indispensable antes de la prueba de presión. Hasta completarla, el simulador no habilita bombas ni pruebas.</div>
+   ${its.map(([k,t,d])=>`<label class="ck"><input type="checkbox" data-k="${k}" ${S.checkDone?'checked disabled':''}><span><b>${t}</b><small>${d}</small></span></label>`).join('')}
+   <div class="ckin"><span><b>Kickout de presión (psi)</b><br><small class="muted">Entre ${fmt(kMin)} y ${fmt(kMax)} psi: 85–100% de la presión máxima del programa y nunca por encima del límite del émbolo (${fmt(c.ps.pmax)} psi). Fuente: programa de fractura + ficha de la bomba.</small></span><input id="ckKick" type="number" value="${S.checkDone?S.kickSet:''}" placeholder="psi" ${S.checkDone?'disabled':''}></div>
+   <div class="ckin"><span><b>Calibración de la válvula de alivio (pop-off) (psi)</b><br><small class="muted">Al menos 500 psi por encima del kickout y como máximo el rating de las líneas (${fmt(c.ironP)} psi). Fuente: certificado del iron y procedimiento del set.</small></span><input id="ckPop" type="number" value="${S.checkDone?S.popSet:''}" placeholder="psi" ${S.checkDone?'disabled':''}></div>
+   ${S.checkDone?'':`<div class="warnbox" style="margin-top:8px">💡 Recomendado para este pozo: kickout <b>${fmt(recKick())}</b> psi y pop-off <b>${fmt(recPop())}</b> psi. <button class="btn sm" id="ckRec">Usar recomendados</button></div>`}
+   <div id="ckErr"></div><div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn" id="ckClose">Cerrar</button>${S.checkDone?'':'<button class="btn pri" id="ckOk">Confirmar lista</button>'}</div>`;
+  $('ovCheck').classList.remove('hidden');if($('ckRec'))$('ckRec').onclick=()=>{$('ckKick').value=recKick();$('ckPop').value=recPop();};$('ckClose').onclick=()=>$('ovCheck').classList.add('hidden');
+  if(!S.checkDone)$('ckOk').onclick=()=>{const miss=[...document.querySelectorAll('#checkBody input[type=checkbox]')].filter(x=>!x.checked);const k=+$('ckKick').value,pp=+$('ckPop').value;let err='';
+    if(miss.length)err=`Falta verificar: ${miss.map(x=>its.find(i=>i[0]===x.dataset.k)[1].split(' (')[0]).join(', ')}.`;
+    else if(kMax<kMin)err=`Con émbolo de ${String(c.ps.d).replace('.',',')}" la bomba solo soporta ${fmt(c.ps.pmax)} psi por rod load: no alcanza para este pozo. Empieza una etapa nueva con un émbolo más chico (Simulador → Nuevo escenario).`;
+    else if(k>c.ps.pmax&&k<=c.maxP)err=`Kickout inválido: ${fmt(k)} psi supera el límite del émbolo de ${String(c.ps.d).replace('.',',')}" (${fmt(c.ps.pmax)} psi = ${fmt(c.ps.m.rod)} lb ÷ ${c.ps.A.toFixed(2)} in²). Por encima de eso se sobrecargan bielas y crucetas.`;
+    else if(!(k>=kMin&&k<=kMax))err=`Kickout inválido: debe estar entre ${fmt(kMin)} y ${fmt(kMax)} psi.`;
+    else if(!(pp>=k+500&&pp<=c.ironP))err=`Pop-off inválido: entre ${fmt(k+500)} y ${fmt(c.ironP)} psi (por encima del kickout y sin superar el rating de las líneas).`;
+    if(err){$('ckErr').textContent=err;return;}
+    S.checkDone=true;S.kickSet=k;S.popSet=pp;S.hiTest=Math.min(pp-250,k+500);$('ovCheck').classList.add('hidden');
+    log(`Lista pre-operativa completa. Kickout en ${fmt(k)} psi, pop-off en ${fmt(pp)} psi. Prueba de alta a ${fmt(S.hiTest)} psi.`,'g');
+    if(S.autoOnline){const L=S.pumps.filter(p=>!p.dead&&!p.maint&&!p.issue);L.forEach(p=>p.on=true);buildPumps();log(`${L.length} bombas puestas en línea automáticamente (preparadas en la revisión de flota). Siguen paradas hasta abrir el pozo y fijar caudal.`,'g');}
+    updateUI();};}
+
+/* ================= PASO A PASO (simulador) ================= */
+function sandInCasing(){return S.wb.reduce((a,s)=>a+(s.ppa>0?s.v:0),0);}
+const OBS=(l,v,st='')=>[l,v,st];
+const STEPS=[
+ {k:'check',t:'Lista pre-operativa',ind:1,tgt:'btnCheck',done:()=>S.checkDone,why:'Antes de presurizar se verifican la seguridad, los equipos y las calibraciones. Sin esto el simulador no habilita bombas ni pruebas.',
+  act:['Toca «📋 Lista pre-operativa»','Revisa cada ítem y márcalo','Carga el kickout (85–100% de la presión máxima de trabajo) y el pop-off (≥ kickout + 500 psi y ≤ rating de las líneas)'],
+  obs:()=>[OBS('Presión máxima de trabajo',fmt(S.c.maxP)+' psi'),OBS('Rating de líneas',fmt(S.c.ironP)+' psi'),OBS('Bombas con 🔧 mantenimiento recomendado',S.pumps.filter(p=>pumpPM(p).length).length,S.pumps.some(p=>pumpPM(p).length)?'warn':'ok')]},
+ {k:'pm',t:'Mantenimiento preventivo de bombas (recomendado)',tgt:'pumpsCard',done:()=>!S.pumps.some(p=>pumpPM(p).length&&!p.dead)||S.valve,why:'Las bombas marcadas con 🔧 tienen componentes con más del 85% de su vida útil. Se mantienen antes de presurizar, cuando no cuesta tiempo de bombeo.',
+  act:['Toca una bomba con 🔧','Confirma el aislamiento (LOTO)','Usa el atajo «Preventivo recomendado» y ejecuta','O sigue adelante y acepta el riesgo de falla'],
+  obs:()=>S.pumps.filter(p=>pumpPM(p).length).slice(0,4).map(p=>OBS('B'+p.id,pumpPM(p).map(g=>GRP[g].split(' ')[0]).join(', '),'warn'))},
+ {k:'test',t:'Prueba de presión: baja y alta',ind:1,tgt:'btnTest',done:()=>S.testDone,why:'Con la válvula maestra cerrada se presuriza el lado de alta: primero BAJA (1.000 psi, 1 min) y después ALTA (por encima del kickout, 3 min). Si la presión cae más de lo admitido, hay una fuga.',
+  act:['Toca «🔧 Prueba de presión»','Mira el gráfico: la presión tiene que quedarse plana','Si falla: «Despresurizar y reparar» y repetir'],
+  obs:()=>{const T=S.test;return [OBS('Presión en las líneas',fmt(T?T.p:0)+' psi'),OBS('Prueba en curso',T?(T.stage==='low'?'BAJA':'ALTA'):S.testLow?'BAJA ✔':'—'),OBS('Caída en la retención',T&&T.p0?fmt(T.p0-T.p)+' psi':'—',T&&T.p0&&(T.p0-T.p)>(T.stage==='low'?25:100)?'bad':'ok'),OBS('Objetivo de alta',fmt(S.hiTest)+' psi')];}},
+ {k:'open',t:'Abrir el pozo y registrar la WHP',ind:1,tgt:'btnValve',done:()=>S.valve||S.broken,why:'Al abrir la válvula maestra aparece la presión de cabeza (WHP): la presión del reservorio menos la columna hidrostática. Es el primer dato de la hoja de seguimiento.',
+  act:['Toca «Abrir válvula maestra»','Anota la WHP'],obs:()=>[OBS('WHP esperada',fmt(S.c.pore*S.c.TVD-.052*8.4*S.c.TVD)+' psi'),OBS('Presión poral',fmt(S.c.pore*S.c.TVD)+' psi')]},
+ {k:'pumps',t:'Poner bombas en línea',tgt:'pumpsCard',done:()=>nOn()>0||S.broken,why:'Para la rotura alcanzan 2 a 4 bombas. El resto se suma al subir el caudal. No pongas en línea bombas con falla.',
+  act:['Toca una bomba → «Poner en línea»','O usa «Poner disponibles en línea»'],obs:()=>[OBS('Bombas en línea',nOn()+' de '+S.c.pumps),OBS('HHP disponibles',fmt(availHHP())),OBS('Modelo / émbolo',S.c.ps.m.n+' · '+String(S.c.ps.d).replace('.',',')+'"'),OBS('Por bomba: bpm máx. / psi máx.',S.c.ps.qmax.toFixed(1)+' / '+fmt(S.c.ps.pmax))]},
+ {k:'break',t:'Romper la formación (8–15 bpm)',ind:1,tgt:'qSet',done:()=>S.broken,why:'Con caudal bajo, la presión sube mientras se comprime el pozo hasta que la roca cede: es el pico de breakdown. Después la presión cae a la de extensión.',
+  act:['Lleva el caudal a 10–12 bpm','Opcional: bombea antes el ácido y desplázalo hasta los punzados','Mira cómo sube la presión hasta el pico'],
+  obs:()=>[OBS('Presión de superficie',fmt(S.stpNow)+' psi'),OBS('Presión de fondo',fmt(S.bhpNow)+' psi'),OBS('Rotura esperada en fondo ≈',fmt(S.c.closure*S.c.TVD+S.c.breakX-(S.acidAtPerf?1100:0))+' psi'),OBS('Caudal',S.Q.toFixed(1)+' bpm')]},
+ {k:'ramp',t:`Subir al caudal de diseño`,tgt:'qSet',done:()=>S.rampDone,why:'Sube por escalones de 10–20 bpm, sumando bombas. En cada escalón espera a que la presión se estabilice. La presión no debe pasar el 92% del kickout.',
+  act:['Suma bombas en línea','Sube +10 o +20 bpm y espera','Repite hasta el caudal de diseño'],
+  obs:()=>{const k=S.kickSet,hhp=S.stpNow*S.Q/40.8,av=availHHP();return [OBS('Caudal / diseño',S.Q.toFixed(1)+' / '+S.c.Qd+' bpm'),OBS('Presión vs. kickout',fmt(S.stpNow)+' / '+fmt(k)+' psi',S.stpNow>k*.92?'bad':S.stpNow>k*.85?'warn':'ok'),OBS('HHP usados / disponibles',fmt(hhp)+' / '+fmt(av),av&&hhp/av>.9?'warn':'ok'),OBS('Fricción en tubería',fmt(S.parts.fric||0)+' psi')];}},
+ {k:'pad',t:'Bombear el colchón (pad)',ind:1,tgt:'schedCard',done:()=>S.padDone,why:'El colchón, sin arena, abre y ensancha la fractura. Hasta completarlo la arena queda bloqueada.',
+  act:['Mantén el caudal de diseño','Controla la presión neta y la eficiencia'],obs:()=>[OBS('Colchón bombeado',fmt(Math.max(0,S.Vclean-S.VcleanBD))+' / '+fmt(S.c.sched[0][2])+' bbl'),OBS('Presión neta',fmt(S.pnet||0)+' psi'),OBS('Eficiencia del fluido',Math.round((S.eff||0)*100)+' %')]},
+ {k:'sand',t:'Rampa de arena',tgt:'ppaSet',done:()=>S.flushing||S.shut,why:'La concentración sube por escalones. La arena tarda un volumen de pozo en llegar al fondo. Vigila la presión neta: si sube casi vertical, es un arenamiento.',
+  act:['Deja la arena automática o sube de a 0,25 ppa','No bajes el caudal con arena en fondo','Si hay arenamiento: «Cortar arena y desplazar»'],
+  obs:()=>[OBS('ppa superficie / fondo',(S.ppaS||0).toFixed(2)+' / '+(S.ppaB||0).toFixed(2)),OBS('Presión neta',fmt(S.pnet||0)+' psi',S.so>300?'bad':(S.pnet||0)>S.c.contain?'warn':'ok'),OBS('Riesgo de arenamiento',Math.round((S.risk||0)*100)+' %',(S.risk||0)>1?'bad':(S.risk||0)>.85?'warn':'ok'),OBS('Hidrostática',fmt(S.parts.ph||0)+' psi'),OBS('Presión vs. kickout',fmt(S.stpNow)+' / '+fmt(S.kickSet)+' psi',S.stpNow>S.kickSet*.92?'bad':'ok')]},
+ {k:'flush',t:'Desplazamiento (flush)',ind:1,tgt:'btnStop',done:()=>S.shut,why:'Con fluido limpio se empuja la arena del casing a la formación. Hay que parar cuando la última lechada sale por los punzados: ni antes (queda arena en el pozo) ni mucho después (overflush).',
+  act:['Mira «lechada con arena en el casing»','Cuando llega a 0, toca «Parar bombas»'],obs:()=>[OBS('Lechada con arena en el casing',fmt(sandInCasing())+' bbl',sandInCasing()>0?'warn':'ok'),OBS('Desplazado / volumen del pozo',fmt(S.flushing?S.Vclean-S.flushStart:0)+' / '+fmt(S.c.cap*S.c.MD)+' bbl'),OBS('Sobre-desplazamiento',fmt(S.overflush)+' bbl',S.overflush>S.c.cap*S.c.MD*.1?'warn':'ok')]},
+ {k:'shut',t:'Parar y registrar 5 minutos de cierre',ind:1,tgt:'btnEnd',done:()=>S.isipOk,why:'Al parar desaparecen las fricciones: la presión instantánea es el ISIP. Se registran 5 minutos para ver la declinación. No reinicies las bombas.',
+  act:['Espera los 5 minutos','Anota el ISIP y la presión a los 5 min'],obs:()=>[OBS('ISIP',S.isip!=null?fmt(S.isip)+' psi':'—'),OBS('Tiempo de cierre',Math.floor(S.shutT)+' / 300 s'),OBS('Presión actual',fmt(S.stpNow)+' psi')]},
+ {k:'fg',t:'Gradiente de fractura y reporte',ind:1,tgt:'btnEnd',done:()=>!!S.fgOk,why:'Con el ISIP se calcula el gradiente de fractura (ISIP + hidrostática) ÷ TVD. El reporte queda en Plantillas → Hoja de seguimiento.',
+  act:['Toca «Finalizar etapa»','Calcula el gradiente y compruébalo'],obs:()=>[OBS('Hidrostática (fluido limpio)',fmt(S.isipPh||0)+' psi'),OBS('TVD',fmt(S.c.TVD)+' ft')]}];
+let lastGlow=null;
+function drawStepper(){const cur=STEPS.findIndex(s=>!s.done());const s=STEPS[cur];let h='';
+  if(s){const ob=s.obs();h=`<div class="stcur"><div class="row" style="justify-content:space-between"><b style="font-size:15px">${cur+1}. ${s.t}</b>${s.ind?'<span class="ind">INDISPENSABLE</span>':''}</div><div class="w">${s.why}</div>
+    <ol>${s.act.map(a=>`<li>${a}</li>`).join('')}</ol>${ob.length?`<table class="obs">${ob.map(([l,v,st])=>`<tr class="${st}"><td>${l}</td><td>${v}</td></tr>`).join('')}</table>`:''}${alertTip()}</div>`;}
+  else h=`<div class="stcur"><b>✔ Etapa completa.</b> El reporte está en Plantillas → Hoja de seguimiento.</div>`;
+  $('stepCur').innerHTML=h;
+  $('stepList').innerHTML=STEPS.map((x,i)=>{const d=x.done();const cl=d?'done':i===cur?'now':'lock';return `<div class="st ${cl}"><i>${d?'✔':i===cur?'▶':'·'}</i><span>${i+1}. ${x.t}${x.ind?' <span style="color:color-mix(in srgb,var(--red) 62%,var(--tx));font-size:10px">●</span>':''}</span></div>`;}).join('')+
+   `<div class="st ${S.kick?'fail':'done'}"><i>${S.kick?'✖':'✔'}</i><span>Regla permanente: presión siempre por debajo del kickout (${fmt(S.kickSet)} psi)</span></div>`;
+  const tg=s&&$(s.tgt);if(lastGlow&&lastGlow!==tg)lastGlow.classList.remove('glow');if(tg){tg.classList.add('glow');lastGlow=tg;}}
+function alertTip(){const c=S.c;let t='';if(S.screen&&S.so>300&&!S.shut)t='⚠ Arenamiento: corta la arena YA («Cortar arena y desplazar») y no bajes el caudal de golpe.';
+  else if(S.hhpLim)t=`⚠ Faltan HHP: con ${fmt(availHHP())} HHP no alcanza para ${S.Qset} bpm a esta presión. Suma bombas o baja el caudal objetivo.`;
+  else if(S.pumps.some(p=>p.issue&&p.on&&!p.dead)){const p=S.pumps.find(p=>p.issue&&p.on&&!p.dead);t=`⚠ Bomba ${p.id} con falla: sácala de línea y abre la orden de mantenimiento.`;}
+  else if(S.stpNow>S.kickSet*.92&&!S.test)t='⚠ Presión cerca del kickout: baja el caudal 5–10 bpm.';
+  else if(S.fr===0&&S.Q>20)t='⚠ Estás bombeando sin reductor de fricción: la fricción se triplica.';
+  return t?`<div class="tipbox">${t}</div>`:'';}
+function crits(){const c=S.c,sl=S.sandLeft||0;return [
+ ['Lista pre-operativa completa',S.checkDone],['Prueba de BAJA presión aprobada',S.testLow||S.testDone],[`Prueba de ALTA presión aprobada (${fmt(S.hiTest)} psi)`,S.testDone],['Pozo abierto con WHP registrada',S.valve||S.broken],
+ ['Rotura de formación identificada',S.broken],[`Colchón completo antes de la arena (${fmt(c.sched[0][2])} bbl)`,S.padDone],[`Presión siempre por debajo del kickout (${fmt(S.kickSet)} psi)`,!S.kick],
+ ['Desplazamiento completo: casing sin arena al parar',S.shut?sl<500:false],['Cierre de 5 min con lectura del ISIP',S.isipOk],['Gradiente de fractura calculado',!!S.fgOk]];}
+
+/* ================= UI / KPIs ================= */
+const KP=[['stp','Presión superficie','psi'],['q','Caudal','bpm'],['bhp','Presión fondo (BHP)','psi'],['pnet','Presión neta','psi'],['hhp','HHP usados','HHP'],['ps','ppa superficie','ppa'],['pb','ppa en fondo','ppa'],
+ ['ph','Hidrostática','psi'],['fr','Fricción tubería','psi'],['pf','Fricción punzados','psi'],['tort','Tortuosidad','psi'],['vc','Vol. limpio','bbl'],['sand','Arena en formación','lb'],['eff','Eficiencia fluido','%'],['xf','Long. media fractura','ft']];
+$('kpis').innerHTML=KP.map(([k,l,u])=>`<div class="kpi" id="k-${k}"><div class="l">${l}</div><div class="v"><span>0</span><span class="u">${u}</span></div><div class="m"></div><div class="b"><i></i></div></div>`).join('');
+const KU=Object.fromEntries(KP.map(x=>[x[0],x[2]]));
+function kpi(k,v,d=0,bar=null,cls=''){const e=$('k-'+k);e.querySelector('.v span').textContent=fmt(v,d);if(bar!==null)e.querySelector('.b i').style.width=clamp(bar,0,1)*100+'%';e.className='kpi '+cls;
+  e.querySelector('.m').textContent=$('metric').checked?met(v,KU[k]):'';}
+function updateUI(){if(!S)return;const c=S.c,P=S.parts&&S.parts.ph!==undefined?S.parts:pressures(0);
+  const stp=S.stpNow||0,k=S.kickSet;kpi('stp',stp,0,stp/k,stp>k*.92?'alarm':stp>k*.8?'warn':'');$('k-stp').querySelector('.b i').style.background=stp>k*.92?'var(--red)':'var(--acc)';
+  kpi('q',S.Q,1,S.Q/110);kpi('bhp',S.valve?P.bhp:0,0,P.bhp/(c.TVD*1.3));kpi('pnet',S.broken?S.pnet:0,0,(S.pnet||0)/2500,S.so>300?'alarm':'');
+  const hhp=stp*S.Q/40.8,av=availHHP();kpi('hhp',hhp,0,av?hhp/av:0,S.hhpLim?'warn':'');kpi('ps',S.ppaS||0,2,(S.ppaS||0)/4);kpi('pb',S.ppaB||0,2,(S.ppaB||0)/4);
+  kpi('ph',P.ph,0,P.ph/8000);kpi('fr',P.fric,0,P.fric/8000,S.fr===0&&S.Q>20?'warn':'');kpi('pf',P.perf,0,P.perf/2000);kpi('tort',P.tort,0,P.tort/2000);
+  kpi('vc',S.Vclean,0,S.Vclean/(c.sched.reduce((a,x)=>a+x[2],0)+c.cap*c.MD));kpi('sand',S.sandForm,0,S.sandForm/S.sandDesign);kpi('eff',(S.eff||0)*100,0,S.eff||0);
+  const w=(.08+(S.pnet||0)/5000)*(c.wMul||1)/12,xf=S.Vf>0?S.Vf*5.615/(2*S.H*w*c.clusters):0;S.xf=xf;kpi('xf',xf,0,xf/800);
+  $('hhpTxt').textContent=`· ${nOn()} en línea · ${fmt(av)} HHP disponibles`;$('simClock').textContent=clock(S.t);$('phaseBadge').textContent=S.phase.toUpperCase();
+  $('qSetV').textContent=S.Qset+' bpm';$('ppaSetV').textContent=($('autoSand').checked?'AUTO ':'')+(($('autoSand').checked?(S.broken&&!S.flushing&&S.padDone?schedPpa():0):S.ppaSet)).toFixed(2)+' ppa';
+  $('frV').textContent=S.fr===0?'fricción ×3':'';$('lagTxt').textContent=fmt(c.cap*c.MD)+' ';
+  $('btnValve').textContent=S.valve?'Cerrar válvula maestra':'Abrir válvula maestra';$('btnValve').className='btn'+(S.valve?' grn':'');
+  $('btnRepair').style.display=S.test&&S.test.ph==='fail'&&S.repairing<=0?'':'none';$('btnTest').disabled=S.valve||!!S.test||S.repairing>0||S.testDone;
+  $('btnTest').textContent=S.testDone?'✔ Pruebas de baja y alta OK':S.test?(S.test.stage==='low'?'🔧 Prueba de BAJA…':'🔧 Prueba de ALTA…'):'🔧 Prueba de presión (baja + alta)';
+  $('btnCheck').textContent=S.checkDone?'✔ Lista pre-operativa':'📋 Lista pre-operativa';$('btnAcid').disabled=!S.valve||S.broken||S.acidDone;$('btnFlush').disabled=!S.broken||S.flushing;
+  refreshPumps();if(curPump&&!$('ovPump').classList.contains('hidden')&&(curPump.maint||curPump.issue)){const t=$('pumpBody').querySelector('.badge');if(t)t.textContent=curPump.maint?`EN MANTENIMIENTO (${Math.ceil(curPump.maint/60)} min)`:t.textContent;}
+  const v=S.Vclean-S.VcleanBD,idx=S.broken?schedIdx():-1;let acc=0;c.sched.forEach((s,i)=>{const r=$('sr'+i);const real=S.broken?clamp(v-acc,0,s[2]):0;acc+=s[2];r.querySelector('.rv').textContent=fmt(real);r.className=i<idx?'done':i===idx&&!S.flushing?'cur':'';});
+  $('srF').querySelector('.rv').textContent=fmt(S.flushing?S.Vclean-S.flushStart:0);$('srF').className=S.flushing&&!S.shut?'cur':S.shut?'done':'';$('totReal').textContent=fmt(S.Vclean);
+  const al=$('alarm');let msg='';if(stp>k*.92&&!S.test)msg=`⚠ PRESIÓN ALTA: ${fmt(stp)} psi (kickout ${fmt(k)}). Baja el caudal o corta la arena.`;else if(S.so>300&&!S.shut)msg='⚠ ARENAMIENTO EN CURSO: corta la arena y desplaza.';else if(S.pumps.some(p=>p.issue&&p.on&&!p.dead))msg='⚠ Hay una bomba con falla (parpadea en amarillo): sácala de línea y abre la orden de mantenimiento.';
+  al.textContent=msg;al.classList.toggle('on',!!msg);
+  drawStepper();drawChart();drawWell();}
+function buildSched(){const c=S.c;let h='<tr><th>Paso</th><th>ppa</th><th>Diseño (bbl)</th><th>Real (bbl)</th><th>Arena (lb)</th></tr>';
+  c.sched.forEach(([n,p,v],i)=>{h+=`<tr id="sr${i}"><td>${n}</td><td>${p.toFixed(2)}</td><td>${fmt(v)}</td><td class="rv">0</td><td>${fmt(v*42*p)}</td></tr>`;});
+  const fl=c.cap*c.MD;h+=`<tr id="srF"><td>Desplazamiento</td><td>0,00</td><td>${fmt(fl)}</td><td class="rv">0</td><td>—</td></tr>`;
+  const tot=c.sched.reduce((a,[n,p,v])=>a+v*42*p,0);h+=`<tr><td><b>Total</b></td><td></td><td>${fmt(c.sched.reduce((a,x)=>a+x[2],0)+fl)}</td><td id="totReal">0</td><td><b>${fmt(tot)}</b> <span class="muted">(${met(tot,'lb')})</span></td></tr>`;$('sched').innerHTML=h;S.sandDesign=tot;}
+$('metric').onchange=()=>updateUI();
+
+/* ================= GRÁFICOS ================= */
+function fitCanvas(cv){const r=cv.getBoundingClientRect(),d=Math.min(2,window.devicePixelRatio||1);if(cv.width!==Math.round(r.width*d)||cv.height!==Math.round(r.height*d)){cv.width=Math.round(r.width*d);cv.height=Math.round(r.height*d);}const x=cv.getContext('2d');x.setTransform(d,0,0,d,0,0);return [x,r.width,r.height];}
+function drawChart(){const cv=$('chart');const [x,W,H]=fitCanvas(cv);x.clearRect(0,0,W,H);if(!S)return;const c=S.c,L=46,R=46,T=22,B=24,pw=W-L-R,ph=H-T-B;
+  const pMax=Math.ceil(c.maxP*1.15/2000)*2000,qMax=120,h=S.hist,tMax=Math.max(1800,(h.length?h[h.length-1].t:0)*1.05);
+  x.strokeStyle='var(--p3)';x.fillStyle='var(--mu)';x.font='11px Inter';x.lineWidth=1;
+  for(let i=0;i<=5;i++){const y=T+ph*(1-i/5);x.beginPath();x.moveTo(L,y);x.lineTo(L+pw,y);x.stroke();x.textAlign='right';x.fillText(fmt(pMax*i/5),L-4,y+4);x.textAlign='left';x.fillText(fmt(qMax*i/5),L+pw+4,y+4);}
+  x.textAlign='center';for(let i=0;i<=6;i++){const tt=tMax*i/6;x.fillText(Math.round(tt/60)+' min',L+pw*i/6,H-6);}
+  const X=t=>L+pw*t/tMax,YP=p=>T+ph*(1-p/pMax),YQ=q=>T+ph*(1-q/qMax);
+  x.strokeStyle='var(--yel)';x.setLineDash([6,4]);x.beginPath();x.moveTo(L,YP(S.kickSet));x.lineTo(L+pw,YP(S.kickSet));x.stroke();x.setLineDash([]);
+  const line=(f,col,w=2,dash)=>{x.strokeStyle=col;x.lineWidth=w;x.setLineDash(dash||[]);x.beginPath();let st=false;for(const p of h){const v=f(p);if(v===null||v===undefined){st=false;continue;}const px=X(p.t),py=v;if(!st){x.moveTo(px,py);st=true;}else x.lineTo(px,py);}x.stroke();x.setLineDash([]);};
+  line(p=>p.bhp===null?null:YP(p.bhp),'var(--pur)',1.5,[4,3]);line(p=>YQ(p.q),'var(--blue)');line(p=>YQ(p.ps*25),'var(--sand)');line(p=>YQ(p.pb*25),'var(--brn)',2,[2,2]);line(p=>YP(p.stp),'var(--red)',2.2);
+  x.fillStyle='var(--mu)';x.textAlign='left';x.fillText('psi',L-30,11);x.textAlign='right';x.fillText('bpm · ppa×25',W-2,11);}
+function drawWell(){const cv=$('wellCv');const [x,W,H]=fitCanvas(cv);x.clearRect(0,0,W,H);if(!S)return;const c=S.c,horiz=c.MD>c.TVD*1.2;
+  // formación
+  x.fillStyle='var(--rock)';x.fillRect(0,0,W,H);const zoneY=horiz?H*.62:H*.78;
+  const g=x.createLinearGradient(0,zoneY-40,0,zoneY+40);g.addColorStop(0,'color-mix(in srgb,var(--sand) 10%,var(--bg))');g.addColorStop(.5,'var(--zone)');g.addColorStop(1,'color-mix(in srgb,var(--sand) 10%,var(--bg))');x.fillStyle=g;x.fillRect(0,zoneY-40,W,80);
+  x.fillStyle='var(--mu)';x.font='11px Inter';x.fillText('Zona objetivo',8,zoneY-44);
+  // trayectoria
+  const vx=W*.12,top=18,pts=[];if(horiz){const kx=W*.12,ky=zoneY;for(let i=0;i<=40;i++){const t=i/40;pts.push([vx,top+(ky-top-60)*t]);}for(let i=0;i<=20;i++){const a=i/20*Math.PI/2;pts.push([vx+60-60*Math.cos(a),ky-60+60*Math.sin(a)]);}for(let i=1;i<=60;i++)pts.push([vx+60+(W*.86-vx-60)*i/60,ky]);}
+  else for(let i=0;i<=60;i++)pts.push([vx+W*.25,top+(zoneY-top)*i/60]);
+  const seg=[];let tl=0;for(let i=1;i<pts.length;i++){const l=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);seg.push(l);tl+=l;}
+  const at=f=>{let d=f*tl;for(let i=0;i<seg.length;i++){if(d<=seg[i]){const t=d/seg[i];return [pts[i][0]+(pts[i+1][0]-pts[i][0])*t,pts[i][1]+(pts[i+1][1]-pts[i][1])*t];}d-=seg[i];}return pts[pts.length-1];};
+  // contenido del pozo: desde arriba (fin del array) hacia abajo
+  const V=wbVol();let acc=0;x.lineWidth=9;x.lineCap='butt';
+  for(let i=S.wb.length-1;i>=0;i--){const s=S.wb[i],f0=acc/V,f1=(acc+s.v)/V;acc+=s.v;x.strokeStyle=s.acid?'var(--pur)':s.ppa>0?`color-mix(in srgb,var(--sand) ${Math.max(20,100-s.ppa*28)}%,var(--brn))`:'var(--water)';x.beginPath();const n=Math.max(2,Math.ceil((f1-f0)*80));for(let k=0;k<=n;k++){const p=at(f0+(f1-f0)*k/n);k?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1]);}x.stroke();}
+  x.lineWidth=1.5;x.strokeStyle='var(--steel)';x.beginPath();pts.forEach((p,i)=>i?x.lineTo(p[0],p[1]-6):x.moveTo(p[0]-6,p[1]));x.stroke();
+  // cabeza
+  x.fillStyle=S.valve?'var(--grn)':'var(--red)';x.fillRect(vx-10+(horiz?0:W*.25),4,20,12);x.fillStyle='color-mix(in srgb,var(--mu) 23%,var(--tx))';x.fillText(S.valve?'abierto':'cerrado',vx+14+(horiz?0:W*.25),14);
+  // fracturas
+  const nC=c.clusters,xfPx=clamp((S.xf||0)/700,0,1)*(horiz?55:W*.32),hPx=clamp(S.H/150,0,2)*30;
+  for(let i=0;i<nC;i++){const f=horiz?.62+i*.36/Math.max(1,nC-1):.98;const [px,py]=at(nC>1?f:.995);
+    x.fillStyle='var(--yel)';x.beginPath();x.arc(px,py,3,0,7);x.fill();
+    if(S.broken&&xfPx>1){const sf=clamp(S.sandForm/S.sandDesign,0,1);const hh=Math.max(4,xfPx*(horiz?.9:.35)),ww=horiz?Math.max(2,hPx*.18):xfPx;
+      x.save();x.translate(px,py);x.fillStyle='rgba(63,169,255,.35)';x.beginPath();if(horiz)x.ellipse(0,0,ww,hh,0,0,7);else x.ellipse(0,0,ww,Math.max(4,hPx*.6),0,0,7);x.fill();
+      x.fillStyle=`rgba(230,150,60,${.25+.6*sf})`;x.beginPath();if(horiz)x.ellipse(0,0,ww*.8,hh*sf,0,0,7);else x.ellipse(0,0,ww*sf,Math.max(3,hPx*.45),0,0,7);x.fill();x.restore();}}
+  x.fillStyle='color-mix(in srgb,var(--mu) 23%,var(--tx))';x.font='12px Inter';x.fillText(`Long. media ≈ ${fmt(S.xf||0)} ft · Altura ≈ ${fmt(S.H)} ft · ${c.clusters} cluster(s)`,8,H-8);
+  if(S.so>300){x.fillStyle='var(--red)';x.font='bold 13px Inter';x.fillText('ARENAMIENTO',W-120,H-8);}}
+
+
+
+/* ================= FINAL Y REPORTE ================= */
+function finish(){S.ended=true;const c=S.c,ph=S.isipPh,fgTrue=(S.isip+ph)/c.TVD;S.fgTrue=fgTrue;
+  $('endBody').innerHTML=`<h2>Etapa terminada — análisis del ISIP</h2>
+   <p class="muted">Último paso indispensable: calcula el gradiente de fractura con los datos de la etapa.</p>
+   <div class="score"><div>ISIP (superficie)</div><div>${fmt(S.isip)} psi</div><div>Presión a los 5 min</div><div>${fmt(S.p5)} psi</div><div>Hidrostática (fluido limpio en el pozo)</div><div>${fmt(ph)} psi</div><div>TVD</div><div>${fmt(c.TVD)} ft</div></div>
+   <div class="row"><b>Gradiente de fractura =</b><input id="fgIn" class="btn" style="width:120px" placeholder="psi/ft"> <button class="btn pri" id="fgOk">Comprobar</button></div><div id="fgRes" class="hint" style="margin-top:8px"></div><div id="scoreBox"></div>`;
+  $('ovEnd').classList.remove('hidden');
+  $('fgOk').onclick=()=>{const v=parseFloat(($('fgIn').value||'').replace(',','.'));const ok=Math.abs(v-fgTrue)<=.015;S.fgOk=ok;
+    $('fgRes').innerHTML=(ok?'<span class="badge ok">CORRECTO</span> ':'<span class="badge no">REVISA</span> ')+`(ISIP + Ph) ÷ TVD = (${fmt(S.isip)} + ${fmt(ph)}) ÷ ${fmt(c.TVD)} = <b>${fgTrue.toFixed(3)} psi/ft</b> (${(fgTrue*22.62).toFixed(1)} kPa/m). El gradiente de cierre del modelo es ${c.closure} psi/ft: el ISIP queda algo por encima porque incluye la presión neta remanente.`;
+    $('fgOk').disabled=true;showScore();};}
+function showScore(){const c=S.c,items=[];const sandPct=clamp(S.sandForm/S.sandDesign,0,1.05);
+  items.push(['Arena colocada: '+fmt(S.sandForm)+' de '+fmt(S.sandDesign)+' lb ('+Math.round(sandPct*100)+'%)',Math.round(35*Math.min(1,sandPct))]);
+  const cr=crits(),crOk=cr.filter(x=>x[1]===true).length;items.push([`Puntos indispensables cumplidos: ${crOk}/${cr.length}`,Math.round(10*crOk/cr.length)]);
+  items.push(['Sin kickouts (kickouts: '+S.kick+')',S.kick?0:10]);
+  items.push(['Sin arenamiento (pico por arenamiento: '+fmt(S.soMax)+' psi)',S.soMax<300?10:S.soMax<1200?5:0]);
+  const sl=S.sandLeft||0;items.push(['Desplazamiento: arena en el casing '+fmt(sl)+' lb',sl<500?10:sl<3000?5:0]);
+  const ofPct=S.overflush/(c.cap*c.MD);items.push(['Sobre-desplazamiento: '+fmt(S.overflush)+' bbl ('+Math.round(ofPct*100)+'% del pozo)',ofPct<=.1?5:ofPct<=.3?2:0]);
+  items.push([`Bombas: ${S.repOk} reparaciones correctas, ${S.repBad} incorrectas, ${S.pumpDamage} dañadas`,Math.max(0,15-S.pumpDamage*8-S.repBad*4)]);
+  items.push(['Cálculo del gradiente de fractura',S.fgOk?5:0]);
+  const missing=cr.filter(x=>x[1]!==true).map(x=>x[0]);let tot=items.reduce((a,b)=>a+b[1],0);if(missing.length)tot=Math.min(tot,49);
+  const gr=tot>=90?'A':tot>=80?'B':tot>=65?'C':tot>=50?'D':'E',col={A:'var(--grn)',B:'color-mix(in srgb,var(--grn) 51%,var(--yel))',C:'var(--yel)',D:'color-mix(in srgb,var(--red) 38%,var(--yel))',E:'var(--red)'}[gr];
+  const rep=saveReport(gr,tot,missing);
+  $('scoreBox').innerHTML=`<hr style="border-color:var(--ln);margin:16px 0"><div class="row" style="gap:18px"><div class="grade" style="color:${col}">${gr}</div><div><div class="num" style="font-size:28px">${tot}/100 puntos</div><div class="muted">Presión máx. ${fmt(S.maxSTP)} psi · Caudal prom. ${(S.qSum/Math.max(1,S.qN)).toFixed(1)} bpm · Tiempo ${clock(S.t)}</div></div></div>
+   ${missing.length?`<div style="background:color-mix(in srgb,var(--red) 16%,var(--bg));border:1px solid var(--red);border-radius:8px;padding:10px;margin-top:12px"><b>ETAPA NO VÁLIDA — faltan puntos indispensables:</b><br>${missing.map(m=>'✖ '+m).join('<br>')}</div>`:'<div class="badge ok" style="margin-top:10px">✔ TODOS LOS PUNTOS INDISPENSABLES CUMPLIDOS</div>'}
+   <div class="score">${items.map(([a,b])=>`<div>${a}</div><div>${b}</div>`).join('')}</div>
+   <div class="hint">${tips().join('<br>')}</div><div class="row" style="margin-top:14px"><button class="btn pri" id="again">Repetir escenario</button><button class="btn" id="other">Otro escenario</button><button class="btn" id="seeRep">Ver hoja de seguimiento</button><button class="btn" id="closeEnd">Ver el gráfico</button></div>`;
+  $('again').onclick=()=>{$('ovEnd').classList.add('hidden');start(S.k);};$('other').onclick=()=>{$('ovEnd').classList.add('hidden');openStart();};$('closeEnd').onclick=()=>$('ovEnd').classList.add('hidden');
+  $('seeRep').onclick=()=>{$('ovEnd').classList.add('hidden');go('tpl');showTplPane('t3');};updateUI();}
+function tips(){const t=[],c=S.c;if(S.kick)t.push('• Superaste el kickout: sube el caudal por escalones y mira la fricción y la tortuosidad.');
+  if(S.soMax>300)t.push('• Hubo arenamiento: alarga el colchón, sube la arena más despacio y no bajes el caudal con arena en fondo.');if((S.sandLeft||0)>=500)t.push('• Quedó arena en el casing: desplaza el volumen completo del pozo antes de parar.');
+  if(S.overflush>c.cap*c.MD*.1)t.push('• Sobre-desplazaste: para apenas la lechada con arena sale del casing.');if(S.pumpDamage)t.push('• Saca de línea las bombas con falla apenas aparece la alarma.');if(S.repBad)t.push('• Hubo reparaciones incompletas: cambia exactamente lo que indica el diagnóstico, en el cilindro correcto.');
+  if(!t.length)t.push('• ¡Excelente etapa! Prueba un escenario más difícil o el modo diagnóstico avanzado.');return t;}
+function saveReport(gr,tot,missing){const c=S.c;const r={id:Date.now(),fecha:S.startDate.toLocaleString('es-AR'),esc:c.name,TVD:c.TVD,MD:c.MD,casing:c.casing,kick:S.kickSet,pop:S.popSet,low:S.lowDrop,hi:S.hiTest,hiDrop:S.hiDrop,
+  whp:S.whp,bdBhp:S.breakP?S.breakP.bhp:null,bdStp:S.breakP?S.breakP.stp:null,bdQ:S.breakP?S.breakP.q:null,maxP:S.maxSTP,avgP:S.pSum/Math.max(1,S.qN),avgQ:S.qSum/Math.max(1,S.qN),clean:S.Vclean,slurry:S.Vclean,sand:S.sandForm,sandDesign:S.sandDesign,
+  flush:S.flushing?S.Vclean-S.flushStart:0,over:S.overflush,sandLeft:S.sandLeft,isip:S.isip,p5:S.p5,fg:S.fgTrue,acid:!!S.acidDone,fr:S.fr,kicks:S.kick,so:S.soMax,orders:S.orders,dur:S.t,grade:gr,score:tot,missing,ev:S.ev.filter(e=>e.cls==='w'||e.cls==='e').slice(-12).map(e=>clock(e.t)+' '+e.m.replace(/<[^>]+>/g,''))};
+  const L=store.get('reports',[]);L.unshift(r);store.set('reports',L.slice(0,20));store.set('lastOrders',S.orders);return r;}
+
+/* ================= BUCLE ================= */
+let last=performance.now(),uiT=0;
+function loop(now){requestAnimationFrame(loop);const dtr=Math.min(.1,(now-last)/1000);last=now;if(S&&!S.ended&&speed>0){let simDt=dtr*speed;while(simDt>0){const d=Math.min(1,simDt);step(d);simDt-=d;}}
+  uiT+=dtr;if(S&&uiT>.15&&$('v-sim').classList.contains('on')){uiT=0;updateUI();}}
+addEventListener('resize',()=>{if(S)updateUI();});
+requestAnimationFrame(loop);
+
+/* ================= PALETA DE COLORES ================= */
+const THEMES={
+ naranja:{n:'Naranja fractura',v:{bg:'#0f1216',p1:'#161b21',p2:'#1d242c',p3:'#26303a',ln:'#2e3a46',tx:'#e6ebf0',mu:'#8d9aa8',acc:'#ff8a1f'}},
+ azul:{n:'Azul petróleo',v:{bg:'#0a111c',p1:'#0f1a28',p2:'#152335',p3:'#1d2e45',ln:'#29405c',tx:'#e4edf7',mu:'#8ea3bb',acc:'#3fa9ff'}},
+ verde:{n:'Verde operación',v:{bg:'#0b1310',p1:'#111c17',p2:'#172620',p3:'#1f3229',ln:'#2a4337',tx:'#e3f0e9',mu:'#8fa89b',acc:'#3ddc84'}},
+ rojo:{n:'Rojo seguridad',v:{bg:'#130c0d',p1:'#1b1315',p2:'#24191c',p3:'#302226',ln:'#462f35',tx:'#f2e6e8',mu:'#ad9196',acc:'#ff5a4d'}},
+ ambar:{n:'Arena / ámbar',v:{bg:'#13110b',p1:'#1b1810',p2:'#252016',p3:'#302a1d',ln:'#453c29',tx:'#f3eee2',mu:'#ab9f86',acc:'#ffc93c'}},
+ violeta:{n:'Violeta noche',v:{bg:'#100e18',p1:'#171423',p2:'#1f1b2f',p3:'#29243d',ln:'#3a3356',tx:'#ece8f7',mu:'#9d95b8',acc:'#b48cff'}},
+ grafito:{n:'Grafito (alto contraste)',v:{bg:'#000000',p1:'#0d0d0d',p2:'#161616',p3:'#222222',ln:'#3a3a3a',tx:'#ffffff',mu:'#b5b5b5',acc:'#ffe600'}},
+ diurno:{n:'Cabina diurna (gris claro)',v:{bg:'#2c333b',p1:'#353d46',p2:'#3e4751',p3:'#4a545f',ln:'#5b6672',tx:'#f6f8fa',mu:'#c3ccd5',acc:'#ff8a1f'}}};
+const VDEF={bg:'#0f1216',p1:'#161b21',p2:'#1d242c',p3:'#26303a',ln:'#2e3a46',tx:'#e6ebf0',mu:'#8d9aa8',acc:'#ff8a1f',acctx:'#141414',blue:'#3fa9ff',red:'#ff4d4d',grn:'#3ddc84',yel:'#ffd23f',pur:'#b48cff',brn:'#c98a4a',sand:'#ffb347',water:'#2f7fc0',steel:'#9aa6b2',rock:'#1a1510',zone:'#3a2c1a'};
+const VGRP=[['Fondos y paneles',[['bg','Fondo general'],['p1','Paneles'],['p2','Tarjetas internas'],['p3','Botones y barras'],['ln','Bordes y líneas']]],
+ ['Texto',[['tx','Texto principal'],['mu','Texto secundario y ejes'],['acctx','Texto sobre el color de acento']]],
+ ['Acento',[['acc','Acento (botones principales, paso actual)']]],
+ ['Datos y estados',[['red','Presión de superficie · alarmas'],['blue','Caudal · información'],['grn','OK · bombas en línea'],['yel','Advertencias · kickout'],['pur','Presión de fondo · ácido'],['sand','Arena · ppa en superficie'],['brn','ppa en fondo']]],
+ ['Pozo (vista lateral)',[['rock','Roca de fondo'],['zone','Zona objetivo'],['steel','Casing (acero)'],['water','Agua dentro del pozo']]]];
+const THEX={grafito:{blue:'#00b7ff',red:'#ff3030',grn:'#00e676',yel:'#ffe600',acctx:'#000000'},diurno:{rock:'#3a3128',zone:'#5a4630'}};
+let PAL=store.get('pal',{t:'naranja',cv:{}});if(!PAL.cv)PAL.cv={};if(PAL.acc){PAL.cv.acc=PAL.acc;delete PAL.acc;}
+let MYTH=store.get('myThemes',{});
+function themeVals(k){const t=THEMES[k]||MYTH[k]||THEMES.naranja;return Object.assign({},VDEF,t.v,THEX[k]||{});}
+function curVals(){return Object.assign(themeVals(PAL.t),PAL.cv);}
+function applyPal(){const v=curVals(),r=document.documentElement.style;for(const k in v)r.setProperty('--'+k,v[k]);cvRefresh();
+  const all=Object.assign({},THEMES,MYTH);
+  $('palGrid').innerHTML=Object.entries(all).map(([k,x])=>{const tv=themeVals(k);return `<button data-th="${k}" class="${k===PAL.t?'on':''}"><span class="sw">${['bg','p2','acc','red','blue'].map(c=>`<i style="background:${tv[c]}"></i>`).join('')}</span>${x.n}${MYTH[k]?'<span class="x" data-del="'+k+'" title="Borrar">✕</span>':''}</button>`;}).join('');
+  document.querySelectorAll('#palGrid [data-th]').forEach(b=>b.onclick=e=>{const d=e.target.closest('[data-del]');if(d){delete MYTH[d.dataset.del];store.set('myThemes',MYTH);if(PAL.t===d.dataset.del)PAL.t='naranja';savePal();return;}PAL.t=b.dataset.th;PAL.cv={};savePal();});
+  $('palVars').innerHTML=VGRP.map(([g,L])=>`<div class="pvg">${g}</div>`+L.map(([k,l])=>`<div class="pv"><span>${l}${PAL.cv[k]?' <b style="color:var(--acc)">•</b>':''}</span><input type="color" data-v="${k}" value="${v[k]}"><input class="hx" data-h="${k}" value="${v[k]}" maxlength="7"></div>`).join('')).join('');
+  document.querySelectorAll('#palVars [data-v]').forEach(i=>i.oninput=()=>setVar(i.dataset.v,i.value,false));
+  document.querySelectorAll('#palVars [data-h]').forEach(i=>i.onchange=()=>{if(/^#[0-9a-fA-F]{6}$/.test(i.value))setVar(i.dataset.h,i.value.toLowerCase(),true);else i.value=curVals()[i.dataset.h];});
+  try{if(typeof S!=='undefined'&&S)updateUI();}catch(e){}}
+function setVar(k,val,redraw){PAL.cv[k]=val;store.set('pal',PAL);document.documentElement.style.setProperty('--'+k,val);cvRefresh();const h=document.querySelector(`#palVars [data-h="${k}"]`);if(h)h.value=val;if(redraw)applyPal();try{if(typeof S!=='undefined'&&S)updateUI();}catch(e){}}
+function savePal(){store.set('pal',PAL);applyPal();}
+$('palBtn').onclick=e=>{e.stopPropagation();$('palPop').classList.toggle('hidden');if(!$('palPop').classList.contains('hidden'))applyPal();};
+$('palClose').onclick=()=>$('palPop').classList.add('hidden');
+$('palReset').onclick=()=>{PAL.cv={};savePal();};
+$('palSave').onclick=()=>{const n=($('palName').value||'').trim()||'Mi paleta '+(Object.keys(MYTH).length+1),k='my_'+Date.now();MYTH[k]={n,v:curVals()};store.set('myThemes',MYTH);PAL={t:k,cv:{}};$('palName').value='';savePal();};
+document.addEventListener('click',e=>{if(!$('palPop').classList.contains('hidden')&&!e.composedPath().some(n=>n.id==='palPop'||n.id==='palBtn'))$('palPop').classList.add('hidden');});
+applyPal();
+
+/* ================= CALCULADORAS ================= */
+const CALCS=[
+ {t:'Presión hidrostática',f:'Ph = 0,052 × ρ (ppg) × TVD (ft)',in:[['Densidad del fluido (ppg)',8.4],['TVD (ft)',9800]],r:v=>`${fmt(.052*v[0]*v[1])} psi`,ex:'0,052 convierte ppg·ft a psi. El agua dulce pesa 8,33 ppg y la lechada con arena es más pesada.'},
+ {t:'Densidad de la lechada',f:'ρs = (ρf + ppa) ÷ (1 + 0,0453 × ppa)',in:[['Fluido base (ppg)',8.4],['Concentración (ppa)',2]],r:v=>`${(v[0]+v[1])/(1+.0453*v[1])>0?((v[0]+v[1])/(1+.0453*v[1])).toFixed(2):0} ppg`,ex:'0,0453 gal/lb es el volumen absoluto de la arena (gravedad específica 2,65).'},
+ {t:'Potencia hidráulica',f:'HHP = P (psi) × Q (bpm) ÷ 40,8',in:[['Presión de superficie (psi)',9500],['Caudal (bpm)',85],['HHP por bomba',2500],['Eficiencia (%)',95]],r:v=>{const h=v[0]*v[1]/40.8;return `${fmt(h)} HHP → ${Math.ceil(h/(v[2]*v[3]/100))} bombas`;},ex:'Siempre suma 1 o 2 bombas de reserva por si alguna falla durante la etapa.'},
+ {t:'Fricción en punzados',f:'ΔP = 0,2369 × Q² × ρ ÷ (N² × d⁴ × Cd²)',in:[['Caudal (bpm)',85],['Densidad (ppg)',8.4],['Nº de punzados abiertos',48],['Diámetro (in)',0.40],['Coef. de descarga Cd',0.62]],r:v=>`${fmt(.2369*v[0]*v[0]*v[1]/(v[2]*v[2]*Math.pow(v[3],4)*v[4]*v[4]))} psi`,ex:'Cd empieza en 0,6 y sube hasta 0,9 cuando la arena erosiona los punzados, por eso la fricción baja durante la etapa.'},
+ {t:'Volumen de desplazamiento',f:'Capacidad = ID² ÷ 1029,4 · V = Capacidad × MD',in:[['ID del casing (in)',4.67],['MD al punzado superior (ft)',18500]],r:v=>{const cp=v[0]*v[0]/1029.4;return `${cp.toFixed(5)} bbl/ft → ${fmt(cp*v[1])} bbl`;},ex:'Ese es el flush: el volumen de fluido limpio necesario para dejar el casing sin arena.'},
+ {t:'Gradiente de fractura (ISIP)',f:'FG = (ISIP + Ph) ÷ TVD',in:[['ISIP en superficie (psi)',5600],['Hidrostática (psi)',4281],['TVD (ft)',9800]],r:v=>`${((v[0]+v[1])/v[2]).toFixed(3)} psi/ft`,ex:'Es el dato clave para diseñar las etapas siguientes y estimar la presión de cierre.'},
+ {t:'Volumen limpio, lechada y arena',f:'Vlechada = Vlimpio × (1 + 0,0453·ppa) · Arena = Vlimpio × 42 × ppa',in:[['Volumen limpio (bbl)',1000],['Concentración (ppa)',1.5]],r:v=>`Lechada ${fmt(v[0]*(1+.0453*v[1]))} bbl · Arena ${fmt(v[0]*42*v[1])} lb`,ex:'Las bombas miden caudal de lechada. El programa de bombeo se diseña en volumen limpio.'},
+ {t:'Presión de superficie esperada',f:'STP = BHP − Ph + Pfric + Pperf + Ptort',in:[['Gradiente de cierre (psi/ft)',.92],['TVD (ft)',9800],['Presión neta (psi)',700],['Hidrostática (psi)',4281],['Fricción tubería (psi)',3550],['Fricción punzados + tortuosidad (psi)',900]],r:v=>`${fmt(v[0]*v[1]+v[2]-v[3]+v[4]+v[5])} psi`,ex:'Sirve para saber, antes de bombear, si el caudal de diseño entra dentro del límite de presión de las líneas.'},
+ {t:'Conversión de unidades',f:'1 bbl = 0,159 m³ · 1 psi = 0,0689 bar · 1 ft = 0,3048 m',in:[['Barriles',1000],['psi',10000],['Pies',9800]],r:v=>`${fmt(v[0]*.159,1)} m³ · ${fmt(v[1]*.0689476,1)} bar · ${fmt(v[2]*.3048)} m`,ex:'En Argentina se reporta en sistema métrico, pero los equipos de fractura trabajan en unidades de campo.'}];
+$('calcGrid').innerHTML=CALCS.map((c,i)=>`<div class="card calc" data-i="${i}"><h3>${c.t}</h3><div class="f">${c.f}</div>${c.in.map(([l,v],j)=>`<div class="in"><span>${l}</span><input type="number" step="any" value="${v}" data-j="${j}"></div>`).join('')}<div class="res"></div><div class="ex">${c.ex}</div></div>`).join('');
+document.querySelectorAll('.calc').forEach(el=>{const c=CALCS[el.dataset.i];const upd=()=>{const v=[...el.querySelectorAll('input')].map(i=>parseFloat(i.value)||0);el.querySelector('.res').textContent=c.r(v);};el.querySelectorAll('input').forEach(i=>i.oninput=upd);upd();});
+
+
+/* ================= EVALUACIÓN ================= */
+const QZ=[
+ ['¿Qué hace el reductor de fricción (FR)?',['Aumenta la viscosidad para transportar más arena','Reduce la fricción en el casing, así se logra más caudal con menos presión','Baja la presión de cierre de la formación','Disuelve el daño en los punzados'],1,'El FR (poliacrilamida) reduce la fricción turbulenta entre 60 y 75%. Sin FR, a 85 bpm en un horizontal se supera el límite de presión.'],
+ ['En la ecuación STP = BHP − Ph + Pfric + Pperf + Ptort, ¿qué pasa con la presión de superficie cuando la lechada con arena llena la parte vertical del pozo?',['Sube, porque la arena es más pesada','Baja, porque aumenta la hidrostática','No cambia','Se hace cero'],1,'Más densidad → más hidrostática → la columna «empuja» más y en superficie necesitas menos presión. Es típico ver bajar la STP cuando entra arena de mayor concentración.'],
+ ['Una bomba muestra caudal en caída y presión de descarga oscilante. ¿Cuál es la falla más probable?',['Falla del power end','Lavado de válvula o asiento (valve washout) en el fluid end','Falta de reductor de fricción','Fuga en la cabeza de pozo'],1,'El fluido erosiona la válvula y el asiento, que dejan de sellar: la bomba pierde eficiencia volumétrica. Hay que sacarla de línea para no dañar el fluid end.'],
+ ['¿Para qué sirve el colchón (pad)?',['Para limpiar las líneas','Para generar el ancho y la longitud de fractura antes de que llegue la arena','Para medir el ISIP','Para enfriar las bombas'],1,'Sin un pad suficiente, la arena llega a una fractura angosta y se produce un arenamiento.'],
+ ['La presión neta sube con pendiente cercana a 1 (casi vertical) durante la arena. ¿Qué indica?',['Extensión normal','Crecimiento en altura','Restricción en la punta o arenamiento','Que la fractura se cerró'],2,'Según el análisis de Nolte-Smith: pendiente baja positiva es extensión, pendiente unitaria es restricción o arenamiento, pendiente negativa es crecimiento en altura.'],
+ ['Pozo con capacidad de 0,0212 bbl/ft y punzado superior a 18.500 ft MD. ¿Volumen de desplazamiento?',['392 bbl','212 bbl','1.850 bbl','39 bbl'],0,'0,0212 × 18.500 = 392 bbl. Es el volumen para llevar la arena del casing a los punzados.'],
+ ['STP = 9.500 psi a 85 bpm. ¿Cuántos HHP se usan?',['19.792 HHP','8.075 HHP','40.800 HHP','2.375 HHP'],0,'HHP = 9.500 × 85 ÷ 40,8 = 19.792 HHP. Con bombas de 2.500 HHP al 95% necesitas al menos 9, más reserva.'],
+ ['ISIP = 5.600 psi, hidrostática = 4.281 psi, TVD = 9.800 ft. ¿Gradiente de fractura?',['0,57 psi/ft','0,98 psi/ft','1,23 psi/ft','0,44 psi/ft'],1,'(5.600 + 4.281) ÷ 9.800 = 1,008 ≈ 0,98–1,0 psi/ft. Valores típicos de Vaca Muerta, que está sobrepresionada.'],
+ ['¿Por qué baja la fricción en punzados durante la etapa?',['Porque baja el caudal','Porque la arena erosiona los punzados y aumenta el coeficiente de descarga Cd','Porque se calienta el fluido','No baja nunca'],1,'La erosión agranda y redondea los orificios: Cd pasa de cerca de 0,6 a 0,9 y la fricción cae a la mitad o menos.'],
+ ['Hay inicio de arenamiento. ¿Cuál es la acción correcta?',['Bajar el caudal a cero de inmediato','Subir la concentración de arena','Cortar la arena y desplazar con fluido limpio, manteniendo el caudal si la presión lo permite','Cerrar la válvula maestra'],2,'Bajar el caudal de golpe empeora el arenamiento. Se corta la arena y se intenta desplazar la que queda en el casing.'],
+ ['¿Qué se hace ANTES de abrir el pozo en cada etapa?',['Bombear arena','Prueba de presión de las líneas de alta','Leer el ISIP','Bajar el tapón'],1,'La prueba de presión con la válvula maestra cerrada verifica que no haya fugas en el iron ni en las válvulas. Es una regla de oro de seguridad.'],
+ ['¿Qué significa 2 ppa?',['2 libras de arena por galón de fluido limpio','2 libras por barril','2% de arena en volumen','2 psi por pie'],0,'ppa = pounds of proppant added por galón de fluido limpio. 1.000 bbl a 2 ppa equivalen a 84.000 lb.']];
+let qAns={};function drawQuiz(){$('quiz').innerHTML=`<h3>Evaluación — ${QZ.length} preguntas</h3><div id="qScore" class="num" style="font-size:22px;margin-bottom:10px">0 / ${QZ.length}</div>`+QZ.map(([q,o,a,e],i)=>`<div class="q" data-i="${i}"><p>${i+1}. ${q}</p>${o.map((t,j)=>`<button class="opt" data-j="${j}">${String.fromCharCode(65+j)}) ${t}</button>`).join('')}<div class="exp">${e}</div></div>`).join('')+`<button class="btn" id="qReset">Reiniciar evaluación</button>`;
+  document.querySelectorAll('#quiz .q').forEach(el=>{const i=+el.dataset.i;el.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{if(qAns[i]!==undefined)return;const j=+b.dataset.j;qAns[i]=j===QZ[i][2];
+    el.querySelectorAll('.opt').forEach(x=>{const k=+x.dataset.j;if(k===QZ[i][2])x.classList.add('ok');else if(k===j)x.classList.add('bad');});el.querySelector('.exp').style.display='block';
+    $('qScore').textContent=Object.values(qAns).filter(Boolean).length+' / '+QZ.length+(Object.keys(qAns).length===QZ.length?'  ·  '+Math.round(Object.values(qAns).filter(Boolean).length/QZ.length*100)+'%':'');});});
+  $('qReset').onclick=()=>{qAns={};drawQuiz();};}
+QZ.push(
+ ['Una GD-2500Q (rod load 196.350 lb) con émbolo de 5" llega a unos 10.000 psi. Para trabajar a 12.000 psi, ¿qué haces?',['Subo las rpm','Pongo un émbolo más chico (4,5" o 4")','Pongo un émbolo más grande','Bajo el kickout a 15.000 psi'],1,'La presión máxima es rod load ÷ área del émbolo. Con 4,5" (15,9 in²) el límite sube a ~12.350 psi, a cambio de menos caudal por bomba.'],
+ ['¿Por qué una bomba entrega menos caudal cuando la presión sube?',['Por la fricción en las líneas','Porque la potencia es fija: HHP = psi × bpm ÷ 40,8','Porque se tapa la succión','No cambia: es de desplazamiento positivo'],1,'A rpm máximas manda la carrera; a alta presión manda la potencia. Con 2.250 HHP útiles a 10.000 psi una bomba da ~9,2 bpm.'],
+ ['Una bomba muestra caudal −40%, golpeteo y presión de succión oscilante. ¿Qué cambias?',['Solo los sellos (insertos)','Válvula y asiento de succión','Solo el asiento de descarga','El émbolo'],1,'Son los síntomas de válvula y asiento de succión lavados. Con el metal erosionado, el sello solo no alcanza: se cambian los dos.'],
+ ['Sale fluido por el orificio de drenaje (weep hole) del prensaestopas. ¿Qué componente falla?',['Tapa de succión','Empaquetadura (packing)','Resorte de descarga','Fluid end'],1,'El weep hole indica que la empaquetadura perdió sello sobre el émbolo. Si se demora, la arena raya el émbolo.'],
+ ['¿Por qué no alcanza con cambiar solo la válvula cuando el asiento está lavado?',['Porque la válvula nueva es más cara','Porque una válvula nueva no sella sobre un asiento erosionado y se lava enseguida','Porque el asiento no se puede cambiar','Alcanza, es lo correcto'],1,'Válvula y asiento trabajan en pareja: la cara de sello tiene que estar sana en los dos.'],
+ ['¿Qué es lo primero antes de abrir una tapa del fluid end?',['Bajar el caudal a la mitad','Aislar y bloquear (LOTO): cerrar válvulas, purgar a 0 psi y bloquear el motor','Avisar al wireline','Cambiar el aceite'],1,'Una bomba aislada puede conservar presión atrapada. Sin purga y bloqueo, abrir la tapa es un riesgo mortal.'],
+ ['Kickout de 12.000 psi y líneas de 15.000 psi. ¿Qué calibración de pop-off es válida?',['11.500 psi','12.200 psi','13.000 psi','16.000 psi'],2,'El pop-off va al menos 500 psi por encima del kickout (≥12.500) y no supera el rating de las líneas (≤15.000).'],
+ ['En Vaca Muerta, ¿cuánta agua y arena se usan en promedio por etapa (referencia)?',['150 m³ y 24 t','1.500 m³ y 240 t','15.000 m³ y 2.400 t','500 m³ y 50 t'],1,'Referencia publicada: unos 1.500 m³ de agua y 240 t de arena por etapa. Cada programa define los suyos.']);
+drawQuiz();
+/* ================= INICIO ================= */
+const HOWTO=[['1','Aprende el set','Conoce cada equipo, qué hace y qué se le mantiene.','learn'],['2','Lee la guía paso a paso','El procedimiento completo de una etapa y qué valores mirar en cada paso.','guide'],
+ ['3','Carga los datos de tu pozo','Usa la plantilla: cada valor dice de qué documento sale. Se crea tu propio escenario.','tpl'],['4','Simula la etapa','El panel «Paso a paso» te guía y resalta en naranja el control que toca usar.','sim'],
+ ['5','Atiende las bombas','Cuando falla una bomba, el simulador te dice qué cambiar. Elige las piezas en la orden de mantenimiento.','maint'],['6','Revisa el reporte y evalúate','La hoja de seguimiento queda guardada en Plantillas. Después, haz la evaluación.','quiz']];
+const VMREF=['Ramas laterales de 2,5 a 3,0 km y 40 a 60 etapas por pozo (diseño típico 2025).','Por etapa: unos 1.500 m³ de agua (~9.400 bbl) y ~240 t de arena (~530.000 lb).','La zona más productiva está sobrepresionada: gradiente poral de ~0,9 psi/ft.',
+ 'Rango de campo: presión de tratamiento de 9.000 a 11.500 psi, caudal de 70 a 100 bpm y líneas de 15.000 psi.','Rango de campo: gradiente de fractura de 0,95 a 1,05 psi/ft y profundidad vertical de 2.500 a 3.300 m.'];
+function drawHome(){$('howto').innerHTML=HOWTO.map(([n,t,d,v])=>`<div class="stepc"><div class="n">${n}</div><div><b>${t}</b><p>${d}</p><button class="btn sm" data-go="${v}">Ir →</button></div></div>`).join('');
+  $('vmRef').innerHTML=VMREF.map(x=>`<li>${x}</li>`).join('');
+  $('scnHome').innerHTML=Object.entries(allScn()).map(([k,s])=>`<div class="row" style="justify-content:space-between;border-bottom:1px dashed var(--p3);padding:6px 0"><span><b>${s.name}</b><br><span class="hint">${s.lvl||'PERSONALIZADO'}</span></span><button class="btn sm" data-go="sim" data-scn="${k}">Simular</button></div>`).join('');
+  const R=store.get('reports',[]);$('histHome').innerHTML=R.length?R.slice(0,6).map(r=>`<div class="row" style="justify-content:space-between;border-bottom:1px dashed var(--p3);padding:6px 0"><span><b>${r.esc}</b><br><span class="hint">${r.fecha}</span></span><span class="num" style="font-size:22px;color:${r.missing&&r.missing.length?'var(--red)':'var(--grn)'}">${r.grade}</span></div>`).join('')+'<button class="btn sm" data-go="tpl" style="margin-top:8px">Ver hojas de seguimiento</button>':'Todavía no simulaste ninguna etapa.';}
+drawHome();
+
+/* ================= GUÍA PASO A PASO ================= */
+$('guideIntro').innerHTML=`<ol style="padding-left:20px;margin:4px 0">
+<li><b>Reúne los datos</b> del programa de fractura de la etapa. La pestaña <b>Plantillas</b> te dice qué valor necesitas y de qué documento sacarlo. Si solo quieres practicar, usa un escenario incluido.</li>
+<li><b>Elige el escenario</b> en Simulador → «Nuevo escenario». Arranca por el pozo escuela, sigue con Vaca Muerta petróleo, después gas y por último el desafío.</li>
+<li><b>Revisión de flota</b>: al empezar, el simulador te muestra cada bomba con lo que hay que cambiar y te recomienda dejarlas al 100%. Con un clic quedan listas y se ponen en línea solas al completar la lista pre-operativa.</li>
+<li><b>Sigue el «Plan para una etapa efectiva»</b>: 11 pasos con los valores de tu pozo (kickout, pop-off, caudal de rotura, escalones, volumen de desplazamiento).</li>
+<li><b>Sigue el panel «Paso a paso»</b>: muestra el paso actual, qué hacer, los valores a observar en vivo (verde OK · amarillo atención · rojo actuar) y resalta en naranja el botón que toca usar.</li>
+<li><b>Controla la velocidad</b>: x15 o x30 para aprender, x60 o x120 cuando ya domines la etapa. Con ⏸ congelas todo para analizar.</li>
+<li><b>Lee la cabina</b>: arriba están los indicadores (presión de superficie, caudal, presión de fondo, neta, HHP, ppa en superficie y en fondo, hidrostática y fricciones). En el gráfico, la línea amarilla punteada es tu kickout.</li>
+<li><b>Al terminar</b>, revisa la nota, los puntos indispensables y la hoja de seguimiento en Plantillas.</li></ol>`;
+const GUIDE=[
+ {t:'Preparación y datos del programa',obj:'Tener todos los valores de diseño antes de llegar a la cabina.',hacer:['Lee el programa de fractura: profundidades, casing, punzados, caudal, programa de bombeo y presión máxima','Revisa el parte del set: bombas disponibles, horas de válvulas, asientos y packing','Verifica el modelo de bomba y el diámetro de émbolo instalado: fijan la presión máxima (rod load ÷ área) y el caudal por bomba','Confirma los inventarios de agua, arena y químicos'],
+  obs:[['TVD y MD a punzados','Definen la hidrostática y el volumen del pozo','VM: TVD 2.800–3.300 m; MD 5.000–6.500 m','Plantilla / encabezado del simulador'],['Presión máxima de trabajo','De ella sale el kickout','VM: 12.000–12.500 psi con líneas de 15.000 psi','Plantilla / lista pre-operativa'],['Émbolo de las bombas','Su límite de presión debe superar la presión máxima','VM: 4,5" (≈12.300–15.000 psi según el modelo)','Elegir escenario / pestaña Bombas']],alerta:['Faltan datos del programa','Inventario de arena o agua menor que el diseño'],err:'Empezar sin saber el volumen del pozo: después no se puede controlar el desplazamiento.'},
+ {t:'Lista pre-operativa',ind:1,obj:'Verificar la seguridad, los equipos y las calibraciones antes de presurizar.',hacer:['Charla de seguridad (JSA) y zona roja','Restricciones en las líneas','Alineación de válvulas','Cebado de bombas y blender','Horas de componentes de las bombas','Volúmenes y químicos','Transductores y radio','Calibrar el kickout y el pop-off'],
+  obs:[['Kickout','85–100% de la presión máxima de trabajo y por debajo del límite del émbolo','VM: 11.000–12.300 psi','Lista pre-operativa'],['Pop-off','≥ kickout + 500 psi y ≤ rating de líneas','VM: 13.000–15.000 psi','Lista pre-operativa']],alerta:['Bombas con 🔧: componentes con más del 85% de su vida'],err:'Kickout por encima del rating de las líneas, o pop-off por debajo del kickout: la válvula de alivio abriría antes de que el kickout pare las bombas.'},
+ {t:'Mantenimiento preventivo de bombas',obj:'Cambiar antes de bombear los componentes al final de su vida útil.',hacer:['Toca cada bomba con 🔧','Aísla y bloquea (LOTO)','Usa «Preventivo recomendado» y ejecuta'],obs:[['Horas de válvulas y asientos','Vida de referencia ~150 h','Cambiar al 85–90%','Panel de la bomba'],['Horas de packing','Vida de referencia ~120 h','Cambiar al 85–90%','Panel de la bomba']],alerta:['Una bomba que falla en plena arena te quita HHP justo cuando más los necesitas'],err:'Poner en línea una bomba con falla activa.'},
+ {t:'Prueba de presión: baja y alta',ind:1,obj:'Comprobar que el lado de alta no tiene fugas.',hacer:['Válvula maestra CERRADA','Prueba de BAJA: 1.000 psi durante 1 min, caída máxima 25 psi','Prueba de ALTA: por encima del kickout durante 3 min, caída máxima 100 psi','Si falla: despresurizar, ajustar la unión y repetir desde la baja'],
+  obs:[['Presión de prueba','Debe quedarse plana','Alta VM: ~12.500–13.000 psi','Gráfico / KPI de presión'],['Caída en la retención','Dentro del límite admitido','≤25 psi baja, ≤100 psi alta','Panel paso a paso']],alerta:['Caída sostenida = fuga'],err:'Golpear o ajustar una unión con presión. Siempre despresurizar antes.'},
+ {t:'Abrir el pozo y leer la WHP',ind:1,obj:'Registrar la presión de cabeza inicial.',hacer:['Abrir la válvula maestra','Anotar la WHP'],obs:[['WHP','Presión poral − hidrostática','VM petróleo: ~4.300 psi (sobrepresionado)','KPI de presión de superficie']],alerta:['WHP muy distinta a la esperada: revisar los transductores o la comunicación con otra etapa'],err:'Abrir el pozo con las bombas en marcha o sin la prueba aprobada.'},
+ {t:'Rotura de la formación',ind:1,obj:'Romper la roca a bajo caudal e identificar el pico de breakdown.',hacer:['Poner 2 a 4 bombas en línea','Subir a 8–15 bpm','Opcional: ácido 15% (24 bbl) desplazado hasta los punzados'],obs:[['Presión de superficie','Sube y cae de golpe al romper','VM: pico de 7.000–8.500 psi en superficie','Gráfico'],['Presión de fondo en la rotura','Cierre + sobrepresión de rotura','VM: ~11.000–11.500 psi','KPI BHP']],alerta:['Si la presión llega al kickout sin romper: bajar el caudal, bombear ácido'],err:'Subir el caudal de golpe sin haber roto la formación.'},
+ {t:'Subir al caudal de diseño',obj:'Llegar al caudal del programa sin pasar el kickout.',hacer:['Subir de a 10–20 bpm sumando bombas','Esperar que la presión se estabilice en cada escalón','Verificar el reductor de fricción'],obs:[['Presión vs. kickout','Por debajo del 92%','VM: 9.500–11.000 psi a 80–90 bpm','KPI / gráfico'],['HHP usados / disponibles','Menos del 90%: reserva por si falla una bomba','VM: ~20.000–23.000 HHP','Encabezado de bombas'],['Fricción en tubería','Crece con Q^1,75; sin FR se triplica','VM: ~3.300–3.800 psi a 85 bpm','KPI']],alerta:['HHP insuficientes: el caudal real no llega al objetivo'],err:'Subir directo al caudal final: picos de presión y kickout.'},
+ {t:'Colchón (pad)',ind:1,obj:'Crear el ancho y la longitud de la fractura antes de la arena.',hacer:['Mantener el caudal de diseño','Bombear el volumen de colchón completo'],obs:[['Volumen de colchón','Según el programa','VM: 1.200–1.500 bbl','Tabla del programa'],['Presión neta','Sube suave','VM: 600–900 psi','KPI']],alerta:['Presión neta por encima de la contención: crecimiento en altura'],err:'Acortar el colchón: es la causa número uno de arenamiento.'},
+ {t:'Rampa de arena',obj:'Colocar toda la arena del diseño sin arenar.',hacer:['Subir la ppa por escalones (automático o de a 0,25)','Mantener el caudal estable','Vigilar la ppa en fondo y la presión neta'],obs:[['ppa superficie vs. fondo','La de fondo llega con un volumen de pozo de retraso','VM: 0,5 → 2,25 ppa','KPI / gráfico'],['Hidrostática','Sube con la arena: la presión de superficie baja','VM: 4.230 → 4.800 psi','KPI'],['Presión neta y riesgo','Si sube casi vertical: arenamiento','—','KPI / paso a paso']],alerta:['Pendiente vertical de la presión neta','Presión cerca del kickout','Caída de caudal por una bomba con falla'],err:'Bajar el caudal con arena en fondo: aumenta el riesgo de arenamiento.'},
+ {t:'Desplazamiento (flush)',ind:1,obj:'Dejar el casing limpio sin sobre-desplazar.',hacer:['Cortar la arena','Bombear fluido limpio hasta que la lechada con arena salga del casing','Parar en ese momento'],obs:[['Volumen del pozo','Capacidad × MD','VM: ~390–410 bbl (5½" 23#)','Tabla del programa'],['Lechada con arena en el casing','Tiene que llegar a 0','—','Paso a paso'],['Sobre-desplazamiento','Menos del 10% del volumen del pozo','<40 bbl','Paso a paso']],alerta:['Arena en el casing al parar: problemas para bajar el tapón de la etapa siguiente'],err:'Parar por tiempo y no por volumen.'},
+ {t:'Cierre, ISIP y 5 minutos',ind:1,obj:'Leer el ISIP y la declinación.',hacer:['Parar todas las bombas','Registrar el ISIP','Esperar 5 minutos y registrar la presión'],obs:[['ISIP','BHP al parar − hidrostática','VM petróleo: ~5.000–5.800 psi','KPI / registro'],['Presión a 5 min','Declinación por pérdida de fluido','—','Registro']],alerta:['ISIP muy alto respecto de etapas anteriores: posible arenamiento o interferencia con otra etapa'],err:'Volver a bombear antes de completar los 5 minutos.'},
+ {t:'Gradiente de fractura y reporte',ind:1,obj:'Calcular el gradiente de fractura y dejar el registro de la etapa.',hacer:['FG = (ISIP + Ph) ÷ TVD','Completar la hoja de seguimiento','Planificar el mantenimiento entre etapas'],obs:[['Gradiente de fractura','Por encima del gradiente de cierre','VM: 0,95–1,05 psi/ft','Modal final / hoja de seguimiento']],alerta:['Gradiente que crece etapa a etapa: revisar el diseño'],err:'No registrar el ISIP: se pierde el dato clave para las etapas siguientes.'},
+ {t:'Entre etapas',obj:'Dejar el set listo para la etapa siguiente.',hacer:['Mantenimiento de las bombas con fallas o con horas altas','Wireline: bajar tapón y cañones, punzar los nuevos clusters','Recargar inventarios y repetir la prueba de presión'],obs:[['Horas de componentes','Planificar los cambios','—','Pestaña Bombas y mantenimiento']],alerta:['Bombas fuera de servicio: HHP de reserva insuficientes para la etapa siguiente'],err:'Arrancar la etapa siguiente sin repetir la prueba de presión.'}];
+$('guideSteps').innerHTML=GUIDE.map((g,i)=>`<details class="gstep"${i<2?' open':''}><summary><span class="n">${i}</span>${g.t}${g.ind?'<span class="ind">INDISPENSABLE</span>':''}</summary><div class="gbody">
+ <div><b>Objetivo:</b> ${g.obj}</div><h5>Qué hacer</h5><ul>${g.hacer.map(x=>`<li>${x}</li>`).join('')}</ul>
+ <h5>Valores a observar</h5><div style="overflow:auto"><table><tr><th>Valor</th><th>Qué mirar</th><th>Típico Vaca Muerta</th><th>Dónde se ve</th></tr>${g.obs.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</table></div>
+ <h5>Señales de alerta</h5><ul>${g.alerta.map(x=>`<li>${x}</li>`).join('')}</ul><h5>Error común</h5><div>${g.err}</div></div></details>`).join('');
+
+/* ================= BOMBAS Y MANTENIMIENTO ================= */
+const PARTS={
+ pe:{t:'Power end',x:20,y:100,w:220,h:220,l:'Power end',d:'Convierte la rotación del motor (vía transmisión) en el movimiento alternativo de los émbolos: cigüeñal, bielas y crucetas.',f:'Daño de cojinetes por falta de lubricación, desgaste de crucetas.',s:'Alarma de baja presión de aceite, temperatura alta, vibración, ruido metálico.',c:'Lubricación (filtro, aceite, bomba de aceite); cojinetes y bielas en taller.',v:'~1.000 h entre servicios de lubricación'},
+ crank:{t:'Cigüeñal y bielas',x:60,y:175,w:140,h:80,l:'Cigüeñal y bielas',d:'Transforman el giro en empuje. Una quintuplex tiene 5 bielas desfasadas para suavizar el caudal.',f:'Desgaste de cojinetes de biela.',s:'Golpe en el power end, temperatura.',c:'Cojinetes de biela (taller).',v:'Inspección por horas de operación'},
+ cross:{t:'Cruceta y pony rod',x:255,y:190,w:105,h:45,l:'Cruceta',d:'La cruceta guía el movimiento recto; el pony rod une la cruceta con el émbolo.',f:'Desgaste de guías.',s:'Ruido y juego excesivo.',c:'Guías / pony rod.',v:'—'},
+ packing:{t:'Prensaestopas y empaquetadura (packing)',x:370,y:180,w:105,h:60,l:'Packing',d:'Sella el émbolo para que el fluido a alta presión no salga hacia el power end. Tiene un orificio de drenaje (weep hole).',f:'Fuga de packing.',s:'Fluido por el weep hole.',c:'Empaquetadura completa (y el émbolo si está rayado).',v:'~120 h'},
+ plunger:{t:'Émbolo (plunger)',x:485,y:192,w:90,h:36,l:'Émbolo',d:'Entra y sale del cilindro desplazando el fluido. Es de acero con recubrimiento duro.',f:'Rayado por arena cuando falla el packing.',s:'Fuga persistente por el prensaestopas.',c:'Émbolo + packing.',v:'~600 h'},
+ fe:{t:'Fluid end (bloque)',x:590,y:80,w:180,h:260,l:'Fluid end',d:'Bloque de acero forjado con las cámaras de los cilindros, donde están las válvulas y los asientos. Soporta los ciclos de alta presión.',f:'Fisura por fatiga, lavado de alojamientos.',s:'Fluido por el cuerpo del bloque.',c:'Fluid end completo.',v:'~2.000 h (muy variable)'},
+ vd:{t:'Válvula, asiento y resorte de DESCARGA',x:615,y:115,w:130,h:55,l:'Válvula descarga',d:'Abre cuando el émbolo empuja y deja salir el fluido a alta presión hacia la línea de descarga.',f:'Lavado de válvula y asiento, resorte roto.',s:'Caudal −40%, presión de descarga pulsante; golpeteo si el resorte está roto.',c:'Válvula + asiento de descarga (kit); resorte.',v:'~150 h'},
+ vs:{t:'Válvula, asiento e inserto de SUCCIÓN',x:615,y:250,w:130,h:55,l:'Válvula succión',d:'Abre cuando el émbolo retrocede y deja entrar la lechada desde el manifold de succión. El inserto de uretano hace el sello.',f:'Lavado de válvula y asiento, inserto cortado.',s:'Caudal −40%, golpeteo y presión de succión oscilante; −12% si es solo el inserto.',c:'Válvula + asiento de succión, o solo el sello si el metal está sano.',v:'~150 h'},
+ cover:{t:'Tapa de succión (suction cover)',x:785,y:180,w:100,h:60,l:'Tapa de succión',d:'Tapa frontal del cilindro que da acceso a las válvulas. Sella con un o-ring.',f:'Fuga del sello de la tapa.',s:'Goteo en la tapa.',c:'Sello / o-ring de la tapa.',v:'~400 h'},
+ suc:{t:'Manifold de succión',x:590,y:360,w:180,h:40,l:'Manifold de succión',d:'Alimenta los cilindros con la lechada que viene del blender a 60–100 psi. Suele tener amortiguador de pulsaciones.',f:'Cavitación por baja presión de carga.',s:'Golpeteo y vibraciones en toda la bomba.',c:'Revisar la presión del blender y el amortiguador.',v:'—'},
+ dis:{t:'Descarga a alta presión',x:590,y:25,w:180,h:40,l:'Descarga alta presión',d:'Recoge el fluido de los 5 cilindros y lo envía al manifold de alta (missile) y al pozo.',f:'Erosión de uniones.',s:'Fuga en la conexión.',c:'Sellos de uniones; inspección UT del iron.',v:'Por certificación'}};
+function drawPumpSvg(){let h='<line x1="200" y1="215" x2="590" y2="210" stroke="color-mix(in srgb,var(--ln) 50%,var(--mu))" stroke-width="6"/><line x1="680" y1="360" x2="680" y2="305" stroke="var(--acc)" stroke-width="3" class="flow"/><line x1="680" y1="115" x2="680" y2="65" stroke="var(--red)" stroke-width="3" class="flow"/>';
+  for(const [k,p] of Object.entries(PARTS)){const big=k==='pe'||k==='fe';h+=`<g class="pp" data-k="${k}"><rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" rx="8" fill="${big?'color-mix(in srgb,var(--p1) 40%,var(--p2))':'color-mix(in srgb,var(--p2) 25%,var(--ln))'}" stroke="color-mix(in srgb,var(--mu) 15%,var(--ln))"/><text x="${p.x+p.w/2}" y="${p.y+(big?20:p.h/2+4)}" text-anchor="middle"${big?' style="font-weight:700;fill:var(--mu)"':''}>${p.l}</text></g>`;}
+  $('pumpSvg').innerHTML=h;$('pumpSvg').querySelectorAll('.pp').forEach(g=>g.onclick=()=>showPart(g.dataset.k));showPart('vs');}
+function showPart(k){const p=PARTS[k];$('pumpSvg').querySelectorAll('.pp').forEach(g=>g.classList.toggle('sel',g.dataset.k===k));
+  $('partInfo').innerHTML=`<h2 style="margin:0 0 6px;font-family:Rajdhani;font-size:26px">${p.t}</h2><div style="line-height:1.5;color:color-mix(in srgb,var(--mu) 24%,var(--tx))">${p.d}</div><h4 style="color:var(--acc);font-size:12px;letter-spacing:.1em;margin:12px 0 4px">FALLA TÍPICA</h4><div>${p.f}</div><h4 style="color:var(--acc);font-size:12px;letter-spacing:.1em;margin:12px 0 4px">SÍNTOMAS</h4><div>${p.s}</div><h4 style="color:var(--acc);font-size:12px;letter-spacing:.1em;margin:12px 0 4px">QUÉ SE CAMBIA</h4><div>${p.c}</div><h4 style="color:var(--acc);font-size:12px;letter-spacing:.1em;margin:12px 0 4px">VIDA DE REFERENCIA</h4><div>${p.v}</div>`;}
+drawPumpSvg();
+$('failTab').innerHTML='<tr><th>Falla</th><th>Síntoma</th><th>Causa</th><th>Qué cambiar exactamente</th><th>Tiempo</th><th>Si no se atiende</th></tr>'+Object.values(FAIL).map(f=>`<tr><td><b>${f.t}</b></td><td>${f.sym}</td><td>${f.why}</td><td>${f.fix.map(x=>REP[x][0]).join(' + ')}</td><td>${5+f.fix.reduce((a,x)=>a+REP[x][1],0)} min</td><td>${f.next?'Empeora a: '+FAIL[f.next].t:'Daño mayor: bomba fuera de servicio'} (≈${Math.round(f.esc/60)} min)</td></tr>`).join('');
+function drawPumpCat(){$('pumpCat').innerHTML='<tr><th>Modelo</th><th>Fabricante</th><th>Tipo</th><th>BHP</th><th>Carrera</th><th>Rod load</th><th>RPM máx.</th><th>Émbolos</th><th>Con émbolo 4,5": bpm máx. / psi máx.</th><th>Fuente</th></tr>'+
+  Object.entries(PUMPS).map(([k,m])=>{const sp=pumpSpec(k,4.5);return `<tr><td><b>${m.n}</b></td><td>${m.mk}</td><td>${m.t} (${m.cyl})</td><td>${fmt(m.bhp)}</td><td>${m.L}"</td><td>${fmt(m.rod)} lb</td><td>${m.rpm}</td><td>${m.pl.map(x=>String(x).replace('.',',')).join(' · ')}"</td><td>${m.pl.includes(4.5)?sp.qmax.toFixed(1)+' bpm / '+fmt(sp.pmax)+' psi':'—'}</td><td>${m.url?`<a href="${m.url}" target="_blank" rel="noopener">${m.src}</a>`:m.src}</td></tr>`;}).join('');
+  $('cPm').innerHTML=pmOptions('exl');$('cPl').innerHTML=plOptions('exl',4.5);pumpCalc();}
+function pumpCalc(){const sp=pumpSpec($('cPm').value,+$('cPl').value),P=+$('cP').value||0,Q=+$('cQ').value||0,qp=pumpQatP(sp,P),n=qp>0?Math.ceil(Q/qp):0,rpm=qp/sp.bpr;
+  const rows=sp.m.pl.map(d=>{const x=pumpSpec(sp.k,d);return `<tr${d===sp.d?' style="background:var(--p3)"':''}><td>${String(d).replace('.',',')}"</td><td>${x.A.toFixed(2)} in²</td><td>${x.gal.toFixed(2)}</td><td>${x.qmax.toFixed(1)}</td><td>${fmt(x.pmax)}</td><td>${P>x.pmax?'<span style="color:var(--red)">supera el rod load</span>':pumpQatP(x,P).toFixed(1)+' bpm'}</td></tr>`;}).join('');
+  $('cOut').innerHTML=specHTML(sp)+(P>sp.pmax?`<div class="warnbox" style="margin-top:8px">⛔ A ${fmt(P)} psi este émbolo supera el rod load (máx. ${fmt(sp.pmax)} psi). Usa un émbolo más chico.</div>`:
+   `<div class="badge ok" style="margin-top:8px;display:inline-block">A ${fmt(P)} psi cada bomba entrega ${qp.toFixed(1)} bpm (${qp<sp.qmax?'limitada por HHP':'limitada por rpm'}, ${Math.round(rpm)} rpm). Para ${Q} bpm necesitas ${n} bombas + 2 de reserva = ${n+2}.</div>`)+
+   `<div style="overflow:auto;margin-top:8px"><table class="ktab"><tr><th>Émbolo</th><th>Área</th><th>gal/rev</th><th>bpm máx.</th><th>psi máx.</th><th>Caudal a ${fmt(P)} psi</th></tr>${rows}</table></div>`;}
+$('cPm').onchange=()=>{const k=$('cPm').value,pl=PUMPS[k].pl,cur=+$('cPl').value;$('cPl').innerHTML=plOptions(k,pl.includes(cur)?cur:pl[Math.min(2,pl.length-1)]);pumpCalc();};
+['cPl','cP','cQ'].forEach(i=>$(i).oninput=$(i).onchange=pumpCalc);drawPumpCat();
+$('lifeTab').innerHTML='<tr><th>Componente</th><th>Vida ref.</th><th>Cambiar al</th></tr>'+Object.keys(LIFE).map(g=>`<tr><td>${GRP[g]}</td><td>${fmt(LIFE[g])} h</td><td>85–90% (${fmt(LIFE[g]*.85)} h)</td></tr>`).join('');
+$('lotoList').innerHTML=['Avisar a la cabina y sacar la bomba de línea (caudal 0).','Cerrar las válvulas tapón de succión y descarga de esa bomba.','Purgar la presión atrapada y verificar 0 psi en el manómetro.','Bloquear motor y transmisión con candado y tarjeta personal (LOTO).','Recién entonces abrir la tapa o el prensaestopas.','Al terminar: retirar herramientas, cerrar tapas, quitar el bloqueo y cebar la bomba antes de ponerla en línea.'].map(x=>`<li>${x}</li>`).join('');
+$('optDiag').checked=store.get('diag',false);$('optDiag').onchange=e=>store.set('diag',e.target.checked);
+
+/* ================= PLANTILLAS ================= */
+const TPL=[['name','Nombre del pozo / etapa','texto','Encabezado del programa de fractura'],['TVD','Profundidad vertical (TVD) a punzados','ft','Estado mecánico / survey direccional del pozo','ft'],
+ ['MD','Profundidad medida (MD) al punzado superior','ft','Programa de la etapa / registro de punzados (wireline)','ft'],['id','Diámetro interno del casing (ID)','in','Estado mecánico (ej. 5½" 23# → 4,670")'],
+ ['pore','Gradiente de presión poral','psi/ft','Estudio de reservorio, DFIT o WHP de cierre de etapas previas'],['closure','Gradiente de cierre (esfuerzo mínimo)','psi/ft','DFIT / minifrac, ISIP de etapas anteriores o modelo geomecánico del programa'],
+ ['breakX','Sobrepresión de rotura sobre el cierre','psi','Historial del pozo y de vecinos: pico de breakdown en fondo − presión de cierre','psi'],['pnet0','Presión neta esperada al inicio','psi','Simulación de diseño del programa (o ISIP − cierre de etapas previas)','psi'],
+ ['maxP','Presión máxima de trabajo (MAWP)','psi','Programa de fractura: menor rating entre casing, cabeza y líneas, con factor de seguridad','psi'],['ironP','Rating de líneas / cabeza','psi','Certificados del iron y de la cabeza de fractura','psi'],
+ ['clusters','Clusters por etapa','n°','Programa de punzados'],['perfPer','Punzados por cluster','n°','Programa de punzados (densidad de disparo × longitud de cada cluster)'],['perfD','Diámetro del punzado (entry hole)','in','Ficha técnica de la carga / cañón'],
+ ['tort0','Tortuosidad esperada','psi','Step-down test de etapas previas (sin dato: 300–600 psi)','psi'],['Qd','Caudal de diseño','bpm','Programa de fractura','bpm'],['pumps','Bombas disponibles','n°','Parte diario del set (flota)'],
+['sand','Arena disponible en silos','lb','Inventario de silos / remitos de arena','lb'],['water','Agua disponible','bbl','Medición de tanques y pileta','bbl']];
+const TEX={oil:BUILT.vm_oil,gas:BUILT.vm_gas,school:BUILT.escuela};
+let tplSched=JSON.parse(JSON.stringify(BUILT.vm_oil.sched));
+function tplVals(src){const s=src||BUILT.vm_oil;return Object.assign({name:s===BUILT.escuela?'Pozo escuela':s===BUILT.vm_gas?'VM gas — etapa tipo':'VM petróleo — etapa tipo',perfPer:Math.round(s.perfN/s.clusters)},s);}
+function drawTplForm(v){$('tPm').innerHTML=pmOptions(v.pm||'exl');$('tPl').innerHTML=plOptions($('tPm').value,v.pl||4.5);$('tplForm').innerHTML=TPL.map(([k,l,u,src,mu])=>`<div class="tf"><span><b>${l}</b><br><span class="u">${u}</span></span><span><input data-t="${k}" ${k==='name'?'':'type="number" step="any"'} value="${v[k]??''}"><span class="mt" data-m="${k}"></span></span><span class="s"><b>De dónde sale:</b> ${src}</span></div>`).join('');
+  document.querySelectorAll('#tplForm input').forEach(i=>i.oninput=tplCalc);drawTplSched();tplCalc();}
+function drawTplSched(){$('tplSched').innerHTML='<tr><th>Paso</th><th>ppa</th><th>Volumen limpio (bbl)</th><th>Arena (lb)</th><th></th></tr>'+tplSched.map((r,i)=>`<tr><td>${i===0?'Colchón (pad)':'Arena'}</td><td><input class="tin" data-s="${i}" data-c="1" type="number" step="0.25" value="${r[1]}" ${i===0?'disabled':''}></td><td><input class="tin" data-s="${i}" data-c="2" type="number" step="50" value="${r[2]}"></td><td>${fmt(r[1]*r[2]*42)}</td><td>${i>0?`<button class="btn sm" data-del="${i}">✕</button>`:''}</td></tr>`).join('');
+  document.querySelectorAll('#tplSched input').forEach(i=>i.oninput=()=>{tplSched[+i.dataset.s][+i.dataset.c]=+i.value;tplCalc();});
+  document.querySelectorAll('#tplSched [data-del]').forEach(b=>b.onclick=()=>{tplSched.splice(+b.dataset.del,1);drawTplSched();tplCalc();});}
+$('addRow').onclick=()=>{const l=tplSched[tplSched.length-1];tplSched.push(['',Math.min(4,(l?l[1]:0)+.25),800]);drawTplSched();tplCalc();};
+function readTpl(){const v={};document.querySelectorAll('#tplForm input').forEach(i=>v[i.dataset.t]=i.dataset.t==='name'?i.value:parseFloat(i.value));return v;}
+function tplCalc(){const v=readTpl();v.pm=$('tPm').value;v.pl=+$('tPl').value;TPL.forEach(([k,,,,mu])=>{const e=document.querySelector(`[data-m="${k}"]`);if(e)e.textContent=mu&&isFinite(v[k])?'= '+met(v[k],mu):'';});
+  tplSched.forEach(r=>r[0]=r[1]>0?`Arena ${String(r[1]).replace('.',',')} ppa`:'Colchón (pad)');
+  const cap=v.id*v.id/1029.4,Vw=cap*v.MD,ph=.052*8.4*v.TVD,Pp=v.pore*v.TVD,whp=Pp-ph,Pc=v.closure*v.TVD,bhp=Pc+v.pnet0*1.15,friK=8.1e-5*Math.pow(4.67/v.id,4.8),fric=friK*v.MD*Math.pow(v.Qd,1.75),
+   N=v.clusters*v.perfPer,perf=.2369*v.Qd*v.Qd*8.4/(N*N*Math.pow(v.perfD,4)*.62*.62),stp=bhp-ph+fric+perf+v.tort0,hhp=stp*v.Qd/40.8,sp=pumpSpec($('tPm').value,+$('tPl').value),np=Math.ceil(v.Qd/pumpQatP(sp,stp)),
+   clean=tplSched.reduce((a,r)=>a+r[2],0),sand=tplSched.reduce((a,r)=>a+r[1]*r[2]*42,0),water=clean+Vw,fg=(Pc+v.pnet0)/v.TVD;
+  const box=(l,x,u)=>`<div><span>${l}</span><b>${x}</b> <span style="display:inline;text-transform:none">${u||''}</span></div>`;
+  $('tSpec').innerHTML=specHTML(sp);$('tplSum').innerHTML=[box('Capacidad del casing',cap.toFixed(5),'bbl/ft'),box('Volumen del pozo (flush)',fmt(Vw),'bbl'),box('Hidrostática (agua)',fmt(ph),'psi'),box('WHP esperada',fmt(whp),'psi'),box('Presión de cierre',fmt(Pc),'psi'),
+   box('Fricción en tubería a Qd',fmt(fric),'psi'),box('Fricción en punzados (inicial)',fmt(perf),'psi'),box('Presión de superficie esperada',fmt(stp),'psi'),box('% de la presión máxima',Math.round(stp/v.maxP*100),'%'),
+   box('HHP necesarios',fmt(hhp),''),box('Caudal por bomba a esa presión',pumpQatP(sp,stp).toFixed(1),'bpm'),box('Presión máx. del émbolo',fmt(sp.pmax),'psi'),box('Bombas necesarias (+2 de reserva)',np+' + 2',''),box('Volumen limpio total',fmt(clean),'bbl'),box('Arena total',fmt(sand),'lb ('+met(sand,'lb')+')'),box('Agua necesaria',fmt(water),'bbl ('+met(water,'bbl')+')'),box('Gradiente de fractura esperado',fg.toFixed(3),'psi/ft')].join('');
+  const W=[];if(stp>v.maxP*.92)W.push(`La presión esperada (${fmt(stp)} psi) supera el 92% de la máxima: baja el caudal de diseño o revisa la fricción y los punzados.`);
+  if(stp>sp.pmax*.92)W.push(`La presión esperada (${fmt(stp)} psi) está a menos del 8% del límite del émbolo (${fmt(sp.pmax)} psi): usa un émbolo más chico.`);if(sp.pmax<v.maxP)W.push(`El émbolo limita la bomba a ${fmt(sp.pmax)} psi, debajo de la máxima de trabajo (${fmt(v.maxP)} psi): el kickout tendrá que quedar debajo de ese valor.`);
+  if(np+2>v.pumps)W.push(`Bombas insuficientes: necesitas ${np} + 2 de reserva y tienes ${v.pumps}.`);if(v.maxP>v.ironP)W.push('La presión máxima de trabajo no puede superar el rating de las líneas.');
+  if(sand>v.sand)W.push(`Arena insuficiente: el programa pide ${fmt(sand)} lb y hay ${fmt(v.sand)} lb.`);if(water>v.water)W.push(`Agua insuficiente: se necesitan ${fmt(water)} bbl y hay ${fmt(v.water)} bbl.`);
+  if(tplSched[0][2]<clean*.1)W.push('El colchón es menor al 10% del volumen total: alto riesgo de arenamiento.');
+  if([v.TVD,v.MD,v.id,v.closure,v.Qd,v.perfD,v.clusters,v.perfPer].some(x=>!(x>0)))W.push('Hay campos vacíos o en cero.');
+  $('tplWarn').innerHTML=W.map(w=>`<div class="warnbox">⚠ ${w}</div>`).join('')||'<div class="badge ok">✔ Datos consistentes: el caudal de diseño entra dentro de la presión máxima</div>';
+  return {v,cap,friK,sand,ok:!W.some(w=>w.includes('vacíos'))};}
+$('tPm').onchange=()=>{const k=$('tPm').value,pl=PUMPS[k].pl,cur=+$('tPl').value;$('tPl').innerHTML=plOptions(k,pl.includes(cur)?cur:pl[Math.min(2,pl.length-1)]);tplCalc();};$('tPl').onchange=tplCalc;
+$('exOil').onclick=()=>{tplSched=JSON.parse(JSON.stringify(BUILT.vm_oil.sched));drawTplForm(tplVals(BUILT.vm_oil));};
+$('exGas').onclick=()=>{tplSched=JSON.parse(JSON.stringify(BUILT.vm_gas.sched));drawTplForm(tplVals(BUILT.vm_gas));};
+$('exSchool').onclick=()=>{tplSched=JSON.parse(JSON.stringify(BUILT.escuela.sched));drawTplForm(tplVals(BUILT.escuela));};
+$('tplSave').onclick=()=>{const r=tplCalc();if(!r.ok){$('tplMsg').textContent='Completa todos los campos antes de guardar.';return;}const v=r.v,k='c_'+Date.now();
+  CUSTOM[k]={name:v.name||'Mi pozo',lvl:'PERSONALIZADO',col:'var(--blue)',desc:`TVD ${fmt(v.TVD)} ft, MD ${fmt(v.MD)} ft, ${v.clusters} clusters, ${v.Qd} bpm. Cargado desde la plantilla.`,
+   TVD:v.TVD,MD:v.MD,id:v.id,casing:`ID ${v.id}"`,pore:v.pore,closure:v.closure,breakX:v.breakX,pnet0:v.pnet0,contain:Math.max(1200,v.pnet0*2),maxP:v.maxP,ironP:v.ironP,pumps:Math.round(v.pumps),php:PUMPS[v.pm].bhp,pm:v.pm,pl:v.pl,
+   perfN:Math.round(v.clusters*v.perfPer),perfD:v.perfD,clusters:Math.round(v.clusters),tort0:v.tort0,eff0:.82,effEnd:.55,friK:r.friK,Qd:v.Qd,ppaCap:2.9,sched:JSON.parse(JSON.stringify(tplSched)),sand:v.sand,water:v.water,fail:1,leak:.4,wear:[.1,.95],wMul:v.clusters<=2?3:1};
+  store.set('custom',CUSTOM);selScn=k;$('tplMsg').textContent='Guardado.';drawMyScn();go('sim');openStart();};
+$('tplCopy').onclick=e=>{const v=readTpl(),r=tplCalc();let t=`SIMULAFRAC (Edgar Añez) — PLANTILLA DE DATOS DE ETAPA\n${'='.repeat(52)}\n`;TPL.forEach(([k,l,u,src])=>{t+=`${l}: ${v[k]??''} ${u==='texto'?'':u}\n   Fuente: ${src}\n`;});
+  t+=`\nPROGRAMA DE BOMBEO\n`;tplSched.forEach(x=>t+=`  ${x[0].padEnd(18)} ${String(x[1]).padStart(5)} ppa  ${String(x[2]).padStart(6)} bbl\n`);
+  t+=`\nPRE-CÁLCULO\n`;document.querySelectorAll('#tplSum div').forEach(d=>t+=`  ${d.querySelector('span').textContent}: ${d.querySelector('b').textContent} ${d.lastChild.textContent||''}\n`);copyText(t,e.target);};
+function drawMyScn(){const L=Object.entries(CUSTOM);$('myScn').innerHTML=L.length?'<h3>Mis pozos guardados</h3>'+L.map(([k,s])=>`<div class="row" style="justify-content:space-between;border-bottom:1px dashed var(--p3);padding:5px 0"><span>${s.name}</span><span><button class="btn sm" data-go="sim" data-scn="${k}">Simular</button> <button class="btn sm" data-delc="${k}">Borrar</button></span></div>`).join(''):'';
+  document.querySelectorAll('[data-delc]').forEach(b=>b.onclick=()=>{delete CUSTOM[b.dataset.delc];store.set('custom',CUSTOM);drawMyScn();});}
+function showTplPane(id){document.querySelectorAll('#tplTabs button').forEach(b=>b.classList.toggle('on',b.dataset.p===id));document.querySelectorAll('.tpane').forEach(p=>p.classList.toggle('on',p.id===id));}
+document.querySelectorAll('#tplTabs button').forEach(b=>b.onclick=()=>showTplPane(b.dataset.p));
+const CHECK_TXT=()=>`SIMULAFRAC (Edgar Añez) — LISTA PRE-OPERATIVA DE ETAPA
+Pozo / etapa: ____________________   Fecha: ___/___/____   Supervisor: ______________
+
+[ ] Charla de seguridad (JSA) realizada. Zona roja delimitada y señalizada.
+[ ] Restricciones (cadenas / eslingas) instaladas en todas las líneas de alta.
+[ ] Alineación de válvulas verificada: manifold, cabeza de fractura y línea de purga.
+[ ] Bombas cebadas. Blender con presión de descarga estable (60–100 psi).
+[ ] Horas de componentes revisadas (válvulas, asientos, packing, émbolos).
+    Bombas con mantenimiento preventivo: ____________________
+[ ] Agua disponible ≥ volumen de la etapa + desplazamiento: ________ bbl
+[ ] Arena disponible ≥ total del programa: ________ lb
+[ ] Químicos cargados (FR ____ gpt) y dosificadoras calibradas.
+[ ] Transductores de presión calibrados. Radio probada con el personal de campo.
+[ ] Kickout calibrado en ________ psi (85–100% de la presión máxima de trabajo).
+[ ] Pop-off calibrado en ________ psi (≥ kickout + 500 psi y ≤ rating de líneas).
+
+PRUEBAS DE PRESIÓN (válvula maestra cerrada)
+[ ] BAJA: 1.000 psi · 1 min · caída ≤ 25 psi       Caída registrada: ______ psi
+[ ] ALTA: ________ psi · 3 min · caída ≤ 100 psi    Caída registrada: ______ psi
+
+Firma supervisor: ______________   Firma operador de cabina: ______________`;
+function repText(r){if(!r)return `SIMULAFRAC (Edgar Añez) — HOJA DE SEGUIMIENTO DE ETAPA
+Pozo / etapa: ______________   Fecha: __/__/____   Hora inicio: ____   Hora fin: ____
+DATOS: TVD ______ ft · MD a punzados ______ ft · Casing ______
+CALIBRACIÓN: Kickout ______ psi · Pop-off ______ psi
+PRUEBAS: Baja 1.000 psi (caída ___ psi) · Alta ______ psi (caída ___ psi)
+APERTURA: WHP ______ psi
+ROTURA: BHP ______ psi · Superficie ______ psi a ____ bpm · Ácido: SI/NO
+BOMBEO: Caudal prom. ____ bpm · Presión prom. ______ psi · Presión máx. ______ psi
+VOLÚMENES: Limpio ______ bbl · Arena ______ lb (diseño ______ lb) · Desplazamiento ______ bbl
+CIERRE: ISIP ______ psi · 5 min ______ psi · Gradiente de fractura ______ psi/ft
+EVENTOS / BOMBAS: _______________________________________________
+OBSERVACIONES: __________________________________________________`;
+ const o=r.orders&&r.orders.length?r.orders.map(x=>`  - ${clock(x.t)} B${x.pump} cil.${x.cyl}: ${x.issue} → ${x.ch.join(' + ')} [${x.ok?'OK':'INCOMPLETA'}] ${x.note}`).join('\n'):'  (sin órdenes)';
+ return `SIMULAFRAC (Edgar Añez) — HOJA DE SEGUIMIENTO DE ETAPA
+Escenario: ${r.esc}        Fecha: ${r.fecha}        Duración: ${clock(r.dur)}
+DATOS: TVD ${fmt(r.TVD)} ft (${fmt(ft2m(r.TVD))} m) · MD ${fmt(r.MD)} ft (${fmt(ft2m(r.MD))} m) · Casing ${r.casing}
+CALIBRACIÓN: Kickout ${fmt(r.kick)} psi · Pop-off ${r.pop?fmt(r.pop):'—'} psi
+PRUEBAS: Baja 1.000 psi (caída ${r.low!=null?fmt(r.low):'—'} psi) · Alta ${fmt(r.hi)} psi (caída ${r.hiDrop!=null?fmt(r.hiDrop):'—'} psi)
+APERTURA: WHP ${r.whp!=null?fmt(r.whp):'—'} psi
+ROTURA: BHP ${r.bdBhp?fmt(r.bdBhp):'—'} psi · Superficie ${r.bdStp?fmt(r.bdStp):'—'} psi a ${r.bdQ?r.bdQ.toFixed(1):'—'} bpm · Ácido: ${r.acid?'SÍ':'NO'}
+BOMBEO: Caudal prom. ${r.avgQ.toFixed(1)} bpm · Presión prom. ${fmt(r.avgP)} psi · Presión máx. ${fmt(r.maxP)} psi · FR ${r.fr} gpt
+VOLÚMENES: Limpio ${fmt(r.clean)} bbl (${met(r.clean,'bbl')}) · Arena en formación ${fmt(r.sand)} lb (${met(r.sand,'lb')}) de ${fmt(r.sandDesign)} lb
+DESPLAZAMIENTO: ${fmt(r.flush)} bbl · Sobre-desplazamiento ${fmt(r.over)} bbl · Arena en casing ${fmt(r.sandLeft||0)} lb
+CIERRE: ISIP ${r.isip!=null?fmt(r.isip):'—'} psi · 5 min ${r.p5!=null?fmt(r.p5):'—'} psi · Gradiente de fractura ${r.fg?r.fg.toFixed(3):'—'} psi/ft
+KICKOUTS: ${r.kicks} · Pico por arenamiento: ${fmt(r.so||0)} psi
+ÓRDENES DE MANTENIMIENTO:
+${o}
+ALERTAS Y EVENTOS:
+${(r.ev||[]).map(x=>'  - '+x).join('\n')||'  (sin alertas)'}
+RESULTADO: ${r.grade} (${r.score}/100)${r.missing&&r.missing.length?' — ETAPA NO VÁLIDA. Faltó: '+r.missing.join('; '):' — todos los puntos indispensables cumplidos'}`;}
+function ordText(L){const blank=`SIMULAFRAC (Edgar Añez) — ORDEN DE MANTENIMIENTO DE BOMBA
+N° de orden: ______   Fecha: __/__/____   Hora: ____   Etapa / pozo: ______________
+Bomba N°: ____   Modelo: ______________   Horas totales: ______
+Cilindro(s): ____
+Falla detectada: _________________________________________________
+Síntomas observados: [ ] caída de caudal  [ ] golpeteo  [ ] presión pulsante  [ ] fuga por weep hole  [ ] goteo en tapa  [ ] alarma de aceite
+Aislamiento (LOTO): [ ] válvulas de succión y descarga cerradas  [ ] presión purgada a 0 psi  [ ] bloqueo con candado y tarjeta
+Componentes cambiados:
+  [ ] Solo sellos (insertos)        [ ] Válvula de succión     [ ] Asiento de succión
+  [ ] Válvula de descarga           [ ] Asiento de descarga    [ ] Resortes
+  [ ] Empaquetadura (packing)       [ ] Émbolo (plunger)       [ ] Sello de tapa
+  [ ] Fluid end                     [ ] Lubricación (filtro / aceite)
+Tiempo de reparación: ______ min   Repuestos usados: _______________________
+Prueba posterior: [ ] cebado  [ ] en línea sin pérdidas
+Mecánico: ______________   Supervisor: ______________`;
+ if(!L||!L.length)return blank;return L.map((x,i)=>`SIMULAFRAC (Edgar Añez) — ORDEN DE MANTENIMIENTO N° ${i+1}
+Hora (simulación): ${clock(x.t)}   Bomba N°: ${x.pump}   Cilindro: ${x.cyl}
+Falla: ${x.issue}
+Aislamiento (LOTO): confirmado
+Componentes cambiados: ${x.ch.join(' + ')}
+Resultado: ${x.ok?'REPARADA':'REPARACIÓN INCOMPLETA'} — ${x.note}`).join('\n\n'+'-'.repeat(50)+'\n\n')+'\n\n'+'='.repeat(50)+'\nFORMATO EN BLANCO:\n\n'+blank;}
+function refreshTpl(){$('out2').value=CHECK_TXT();const R=store.get('reports',[]);$('repSel').innerHTML=R.length?R.map((r,i)=>`<option value="${i}">${r.fecha} — ${r.esc} (${r.grade})</option>`).join(''):'<option>Formato en blanco</option>';
+  $('out3').value=repText(R[0]);$('repSel').onchange=e=>{$('out3').value=repText(R[+e.target.value]);};$('out4').value=ordText(store.get('lastOrders',[]));drawMyScn();}
+drawTplForm(tplVals(BUILT.vm_oil));refreshTpl();
+
+/* ================= PREGUNTAS EXTRA ================= */
+
+})();
+</script>
+</body>
+</html>
