@@ -19,6 +19,7 @@ Funciona en el navegador (PC y celular), sin instalar nada y sin iniciar sesión
 - **Escenarios de Vaca Muerta** (petróleo, gas y desafío) y pozo escuela.
 - **Plantillas:** datos del pozo (con la fuente de cada valor), checklist, hoja de seguimiento de etapa y orden de mantenimiento.
 - Calculadoras, evaluación y paleta de colores totalmente personalizable.
+- **Cuentas y membresía:** registro dentro de la app, 7 días gratis con todo incluido y luego US$ 5 por mes. El pozo escuela, la guía y la evaluación son gratis. Ver [docs/MEMBRESIA.md](docs/MEMBRESIA.md) para activar el cobro con Mercado Pago.
 
 ## Aviso
 

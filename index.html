@@ -10,6 +10,27 @@
 
 :root{--bg:#0f1216;--p1:#161b21;--p2:#1d242c;--p3:#26303a;--ln:#2e3a46;--tx:#e6ebf0;--mu:#8d9aa8;--acc:#ff8a1f;--acctx:#141414;--blue:#3fa9ff;--red:#ff4d4d;--grn:#3ddc84;--yel:#ffd23f;--pur:#b48cff;--brn:#c98a4a;--sand:#ffb347;--water:#2f7fc0;--steel:#9aa6b2;--rock:#1a1510;--zone:#3a2c1a}
 *{box-sizing:border-box}
+
+/* ===== Cuentas y membresía ===== */
+#ovAuth{z-index:200;background:radial-gradient(circle at 25% 20%,color-mix(in srgb,var(--acc) 14%,var(--bg)),var(--bg) 65%)}
+.auth{max-width:440px;width:100%;background:var(--p1);border:1px solid var(--ln);border-radius:16px;padding:26px 24px;box-shadow:0 20px 60px #0008}
+.auth .brand{display:flex;align-items:center;gap:12px;margin-bottom:6px}.auth .brand i{width:46px;height:46px;border-radius:12px;background:var(--acc);display:flex;align-items:center;justify-content:center;font-size:24px;font-style:normal}
+.auth .brand b{font-family:Rajdhani;font-size:28px;letter-spacing:.04em;line-height:1}.auth .brand small{display:block;color:var(--mu);font-size:12px;letter-spacing:.12em}
+.auth .tabsA{display:grid;grid-template-columns:1fr 1fr;background:var(--p2);border-radius:10px;padding:4px;margin:16px 0 14px}.auth .tabsA button{background:none;border:0;color:var(--mu);padding:9px;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px}.auth .tabsA button.on{background:var(--p3);color:var(--tx)}
+.auth label{display:block;font-size:12.5px;color:var(--mu);margin:10px 0 4px}.auth input[type=text],.auth input[type=email],.auth input[type=password]{width:100%;background:var(--p2);border:1px solid var(--ln);color:var(--tx);border-radius:9px;padding:11px 12px;font-size:15px}
+.auth input:focus{outline:2px solid var(--acc);outline-offset:0}.auth .go{width:100%;margin-top:14px;padding:12px;font-size:15px}
+.auth .perk{background:color-mix(in srgb,var(--grn) 10%,var(--p2));border:1px solid color-mix(in srgb,var(--grn) 40%,var(--ln));border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.45}
+.auth .err{color:var(--red);font-size:13px;min-height:18px;margin-top:8px}.auth .ok{color:var(--grn)}.auth .lnk{background:none;border:0;color:var(--blue);cursor:pointer;font-size:13px;padding:0;margin-top:10px}
+.auth .chk{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:var(--mu);margin-top:10px}.demoTag{font-size:11.5px;color:var(--yel);margin-top:12px;line-height:1.4}
+.accChip{background:var(--p2);border:1px solid var(--ln);color:var(--tx);border-radius:999px;padding:6px 12px;cursor:pointer;font-weight:700;font-size:12.5px;white-space:nowrap}
+.accChip.trial{border-color:var(--grn);color:var(--grn)}.accChip.member{border-color:var(--acc);color:var(--acc)}.accChip.free{border-color:var(--yel);color:var(--yel)}
+.price{font-family:Rajdhani;font-size:44px;font-weight:700;line-height:1}.price small{font-size:16px;color:var(--mu);font-weight:600}
+.perks{list-style:none;padding:0;margin:10px 0;display:grid;gap:6px}.perks li{padding-left:24px;position:relative;font-size:14px}.perks li:before{content:'✔';position:absolute;left:0;color:var(--grn);font-weight:700}
+.lockTag{display:inline-block;margin-left:6px;font-size:11px;padding:2px 6px;border-radius:6px;background:color-mix(in srgb,var(--yel) 18%,transparent);color:var(--yel);font-weight:700}
+#ovPay,#ovAcc{z-index:150}
+.auth .hidden,.demoTag.hidden{display:none!important}#ovAuth .auth{margin:auto}#ovAuth{align-items:flex-start}
+#tabs button.locked:after{content:' 🔒';font-size:11px}
+
 .palBtn{margin-left:auto;background:var(--p3);border:1px solid var(--ln);color:var(--tx);border-radius:8px;padding:6px 10px;cursor:pointer;font-weight:600;font-size:13px}
 #palPop{position:fixed;top:56px;right:14px;z-index:60;width:380px;max-height:calc(100vh - 70px);overflow:auto;max-width:calc(100vw - 28px);background:var(--p1);border:1px solid var(--ln);border-radius:12px;padding:12px;box-shadow:0 12px 40px #0009}
 #palPop.hidden{display:none}#palPop h4{margin:0 0 8px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu)}
@@ -217,7 +238,8 @@ textarea.out{width:100%;min-height:220px;background:var(--bg);border:1px solid v
 <body>
 <header>
   <div class="logo"><i>⛽</i><span>SIMULAFRAC<small>por Edgar Añez</small></span></div>
-  <button class="palBtn" id="palBtn" title="Cambiar colores de la app">🎨 Colores</button>
+  <button class="accChip" id="accChip" style="margin-left:auto">…</button>
+  <button class="palBtn" id="palBtn" style="margin-left:8px" title="Cambiar colores de la app">🎨 Colores</button>
   <nav id="tabs">
     <button data-v="home" class="on">Inicio</button>
     <button data-v="learn">Aprender el set</button>
@@ -383,6 +405,30 @@ textarea.out{width:100%;min-height:220px;background:var(--bg);border:1px solid v
 <section id="v-quiz" class="view"><div class="card" id="quiz" style="max-width:860px;margin:0 auto"></div></section>
 </main>
 
+<div class="overlay" id="ovAuth"><div class="auth">
+  <div class="brand"><i>⛽</i><div><b>SIMULA<span style="color:var(--acc)">FRAC</span></b><small>POR EDGAR AÑEZ</small></div></div>
+  <div class="muted" style="font-size:13.5px">Simulador de fractura hidráulica y mantenimiento de bombas.</div>
+  <div class="tabsA"><button data-a="reg" class="on">Crear cuenta</button><button data-a="log">Iniciar sesión</button></div>
+  <div id="aReg">
+    <div class="perk">🎁 <b>7 días gratis con todo incluido.</b> Sin tarjeta. Después, <b id="aPrice"></b> para seguir con los escenarios de Vaca Muerta, mantenimiento, plantillas y calculadoras. El pozo escuela, la guía y la evaluación siguen gratis.</div>
+    <label>Nombre y apellido</label><input type="text" id="aName" autocomplete="name" placeholder="Ej.: Juan Pérez">
+    <label>Correo electrónico</label><input type="email" id="aMail" autocomplete="email" placeholder="tu@correo.com">
+    <label>Contraseña (mínimo 8 caracteres)</label><input type="password" id="aPass" autocomplete="new-password">
+    <label>Repetir contraseña</label><input type="password" id="aPass2" autocomplete="new-password">
+    <label class="chk"><input type="checkbox" id="aTerms"> <span>Acepto que SimulaFrac es una herramienta didáctica y no reemplaza los procedimientos ni manuales de cada operación.</span></label>
+    <button class="btn pri go" id="aRegGo">Crear cuenta y empezar la prueba gratis</button>
+  </div>
+  <div id="aLog" class="hidden">
+    <label>Correo electrónico</label><input type="email" id="lMail" autocomplete="email">
+    <label>Contraseña</label><input type="password" id="lPass" autocomplete="current-password">
+    <button class="btn pri go" id="aLogGo">Entrar</button>
+    <button class="lnk" id="aForgot">¿Olvidaste tu contraseña?</button>
+  </div>
+  <div class="err" id="aErr"></div>
+  <div class="demoTag hidden" id="aDemo">⚙ Modo prueba: las cuentas se guardan solo en este navegador y el pago es simulado. Se activa el cobro real al conectar Supabase y Mercado Pago.</div>
+</div></div>
+<div class="overlay hidden" id="ovPay"><div class="modal" style="max-width:520px" id="payBody"></div></div>
+<div class="overlay hidden" id="ovAcc"><div class="modal" style="max-width:520px" id="accBody"></div></div>
 <div id="toast"></div>
 <div id="palPop" class="hidden"><h4>Temas</h4><div class="palGrid" id="palGrid"></div>
   <h4 style="margin-top:12px">Todos los colores (toca cualquiera para cambiarlo)</h4><div id="palVars"></div>
@@ -424,7 +470,7 @@ const MET={psi:[.0689476,'bar',0],bbl:[.158987,'m³',1],bpm:[.158987,'m³/min',2
 const met=(v,u,d)=>{const m=MET[u];return m?fmt(v*m[0],d??m[2])+' '+m[1]:'';};
 
 /* ================= TABS ================= */
-function go(v){document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x.dataset.v===v));document.querySelectorAll('.view').forEach(x=>x.classList.toggle('on',x.id==='v-'+v));
+function go(v){if(typeof ACC!=='undefined'&&!ACC.canView(v)){ACC.paywall(VIEWNAME[v]||'esta sección');return;}document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x.dataset.v===v));document.querySelectorAll('.view').forEach(x=>x.classList.toggle('on',x.id==='v-'+v));
   if(v==='sim'&&!S)openStart();if(v==='tpl')refreshTpl();if(v==='home')drawHome();window.scrollTo(0,0);if(S)updateUI();}
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>go(b.dataset.v));
 document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g){go(g.dataset.go);if(g.dataset.scn){selScn=g.dataset.scn;openStart();}}const c=e.target.closest('[data-copy]');if(c)copyText($(c.dataset.copy).value,c);});
@@ -515,11 +561,11 @@ let selScn='escuela';
 function specHTML(sp){return `<div class="specbox"><div><span>Cilindros × carrera</span><b>${sp.m.cyl} × ${sp.m.L}"</b></div><div><span>Desplazamiento</span><b>${sp.gal.toFixed(2)} gal/rev</b></div><div><span>Caudal máx. (${sp.m.rpm} rpm)</span><b>${sp.qmax.toFixed(1)} bpm</b></div><div><span>Presión máx. (rod load)</span><b>${fmt(sp.pmax)} psi</b></div><div><span>HHP útil (90%)</span><b>${fmt(sp.hhp)}</b></div></div>`;}
 function stRefresh(fromScn){const c=allScn()[selScn];if(fromScn){$('stPm').innerHTML=pmOptions(c.pm||'gd2500q');$('stPl').innerHTML=plOptions($('stPm').value,c.pl||4.5);}
   const sp=pumpSpec($('stPm').value,+$('stPl').value),W=pumpWarn(sp,c);$('stSpec').innerHTML=specHTML(sp)+W.map(w=>`<div class="warnbox" style="margin-top:6px">⚠ ${w}</div>`).join('');}
-function openStart(){const L=allScn();$('scnList').innerHTML=Object.entries(L).map(([k,s])=>`<div class="o${k===selScn?' sel':''}" data-k="${k}"><b>${s.name}</b><small>${s.desc||''}</small><span class="tag" style="background:color-mix(in srgb,${s.col||'var(--blue)'} 14%,transparent);color:${s.col||'var(--blue)'}">${s.lvl||'PERSONALIZADO'}</span></div>`).join('');
+function openStart(){const L=allScn();$('scnList').innerHTML=Object.entries(L).map(([k,s])=>`<div class="o${k===selScn?' sel':''}" data-k="${k}"><b>${s.name}</b><small>${s.desc||''}</small><span class="tag" style="background:color-mix(in srgb,${s.col||'var(--blue)'} 14%,transparent);color:${s.col||'var(--blue)'}">${s.lvl||'PERSONALIZADO'}</span>${ACC.canScn(k)?'':'<span class="lockTag">🔒 Membresía</span>'}</div>`).join('');
   document.querySelectorAll('#scnList .o').forEach(o=>o.onclick=()=>{selScn=o.dataset.k;document.querySelectorAll('#scnList .o').forEach(x=>x.classList.toggle('sel',x===o));stRefresh(true);});stRefresh(true);$('ovStart').classList.remove('hidden');}
 $('stPm').onchange=()=>{const k=$('stPm').value,cur=+$('stPl').value,pl=PUMPS[k].pl,d=pl.includes(cur)?cur:pl.reduce((a,b)=>Math.abs(b-4.5)<Math.abs(a-4.5)?b:a);$('stPl').innerHTML=plOptions(k,d);stRefresh();};
 $('stPl').onchange=()=>stRefresh();
-$('btnGo').onclick=()=>{$('ovStart').classList.add('hidden');start(selScn,{pm:$('stPm').value,pl:+$('stPl').value});go('sim');};
+$('btnGo').onclick=()=>{if(!ACC.canScn(selScn)){ACC.paywall('el escenario «'+allScn()[selScn].name+'»');return;}$('ovStart').classList.add('hidden');start(selScn,{pm:$('stPm').value,pl:+$('stPl').value});go('sim');};
 $('btnNew').onclick=openStart;
 
 /* ================= BOMBAS: componentes, fallas y reparaciones ================= */
@@ -1005,6 +1051,85 @@ function loop(now){requestAnimationFrame(loop);const dtr=Math.min(.1,(now-last)/
   uiT+=dtr;if(S&&uiT>.15&&$('v-sim').classList.contains('on')){uiT=0;updateUI();}}
 addEventListener('resize',()=>{if(S)updateUI();});
 requestAnimationFrame(loop);
+
+/* ================= CUENTAS Y MEMBRESÍA ================= */
+/* Para cobrar de verdad: completa supabaseUrl, supabaseKey y apiBase (ver docs/MEMBRESIA.md). Vacío = modo prueba local. */
+const SF_CONFIG={price:'US$ 5',period:'por mes',trialDays:7,supabaseUrl:'',supabaseKey:'',apiBase:''};
+const VIEWNAME={maint:'Bombas y mantenimiento',tpl:'Plantillas',calc:'Calculadoras'};
+const ACC=(()=>{
+  const FREE_VIEWS=['home','learn','guide','sim','quiz'],FREE_SCN=['escuela'],DAY=864e5,real=!!(SF_CONFIG.supabaseUrl&&SF_CONFIG.supabaseKey);
+  let sb=null,user=null,prof=null;
+  const hash=async t=>{try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('sf::'+t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}catch(e){let h=0;for(const c of t)h=(h*31+c.charCodeAt(0))|0;return 'x'+h;}};
+  const DB={users:()=>store.get('users',{}),save:u=>store.set('users',u)};
+  const fmtD=t=>new Date(t).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  function status(){if(!prof)return {k:'none'};const n=Date.now(),mu=prof.member_until?+new Date(prof.member_until):0,te=prof.trial_end?+new Date(prof.trial_end):0;
+    if(mu>n)return {k:'member',until:mu,cancel:prof.member_status==='cancelled'};if(te>n)return {k:'trial',left:Math.ceil((te-n)/DAY),until:te};return {k:'free'};}
+  const full=()=>['member','trial'].includes(status().k);
+  async function load(){
+    if(real){try{const m=await import('https://esm.sh/@supabase/supabase-js@2');sb=m.createClient(SF_CONFIG.supabaseUrl,SF_CONFIG.supabaseKey);const {data}=await sb.auth.getSession();user=data.session?data.session.user:null;if(user)await getProf();}catch(e){console.warn(e);}}
+    else{const em=store.get('session',null),U=DB.users();if(em&&U[em]){user={email:em};prof=U[em];}}
+    $('aDemo').classList.toggle('hidden',real);$('aPrice').textContent=`${SF_CONFIG.price} ${SF_CONFIG.period}`;
+    if(user)enter();else $('ovAuth').classList.remove('hidden');
+    if(real&&location.search.includes('pago=ok')){toast('Gracias. Estamos confirmando tu pago con Mercado Pago…',6000);setTimeout(async()=>{await getProf();ui();},4000);}}
+  async function getProf(){const {data}=await sb.from('profiles').select('*').eq('id',user.id).single();prof=data;}
+  function err(m,ok){$('aErr').textContent=m||'';$('aErr').classList.toggle('ok',!!ok);}
+  async function register(){const name=$('aName').value.trim(),em=$('aMail').value.trim().toLowerCase(),pw=$('aPass').value;
+    if(name.length<3)return err('Escribe tu nombre y apellido.');if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em))return err('El correo no es válido.');
+    if(pw.length<8)return err('La contraseña debe tener al menos 8 caracteres.');if(pw!==$('aPass2').value)return err('Las contraseñas no coinciden.');if(!$('aTerms').checked)return err('Debes aceptar el aviso para continuar.');
+    if(real){const {data,error}=await sb.auth.signUp({email:em,password:pw,options:{data:{name}}});if(error)return err(error.message);
+      if(!data.session)return err('Te enviamos un correo para confirmar tu cuenta. Confírmalo y luego inicia sesión.',true);user=data.user;await getProf();}
+    else{const U=DB.users();if(U[em])return err('Ya existe una cuenta con ese correo. Inicia sesión.');const now=Date.now();
+      U[em]={name,email:em,pass:await hash(pw),created:now,trial_end:new Date(now+SF_CONFIG.trialDays*DAY).toISOString(),member_until:null,member_status:null};DB.save(U);store.set('session',em);user={email:em};prof=U[em];}
+    log(`Cuenta creada para ${name}. Prueba gratis de ${SF_CONFIG.trialDays} días activada.`,'g');enter(true);}
+  async function login(){const em=$('lMail').value.trim().toLowerCase(),pw=$('lPass').value;if(!em||!pw)return err('Completa correo y contraseña.');
+    if(real){const {data,error}=await sb.auth.signInWithPassword({email:em,password:pw});if(error)return err('Correo o contraseña incorrectos.');user=data.user;await getProf();}
+    else{const U=DB.users();if(!U[em]||U[em].pass!==await hash(pw))return err('Correo o contraseña incorrectos.');store.set('session',em);user={email:em};prof=U[em];}
+    enter();}
+  async function forgot(){const em=($('lMail').value||'').trim().toLowerCase();if(!em)return err('Escribe tu correo arriba y vuelve a tocar «¿Olvidaste tu contraseña?».');
+    if(real){await sb.auth.resetPasswordForEmail(em,{redirectTo:location.origin+location.pathname});err('Si el correo existe, te enviamos un enlace para cambiar la contraseña.',true);}
+    else err('En modo prueba no se envían correos. Crea una cuenta nueva o usa la contraseña que elegiste.');}
+  async function logout(){if(real&&sb)await sb.auth.signOut();store.set('session',null);user=null;prof=null;$('ovAcc').classList.add('hidden');err('');$('ovAuth').classList.remove('hidden');ui();}
+  function enter(isNew){$('ovAuth').classList.add('hidden');err('');ui();const st=status();
+    if(isNew)toast(`🎁 ¡Bienvenido, ${prof.name||''}! Tienes ${SF_CONFIG.trialDays} días gratis con todo incluido.`,6000);
+    else if(st.k==='trial'&&st.left<=2)toast(`Tu prueba gratis termina en ${st.left} día(s). Suscríbete para no perder los escenarios de Vaca Muerta.`,7000);
+    else if(st.k==='free')toast('Tu prueba terminó: estás en el plan gratis. Puedes suscribirte desde tu perfil.',6000);}
+  function ui(){const st=status(),c=$('accChip');c.className='accChip '+(st.k==='none'?'':st.k);
+    c.textContent=st.k==='member'?'⭐ Miembro':st.k==='trial'?`🎁 Prueba · ${st.left} día${st.left>1?'s':''}`:st.k==='free'?'🔓 Suscribirme':'Ingresar';
+    document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('locked',!canView(b.dataset.v)));
+    if(!$('ovStart').classList.contains('hidden'))openStart();}
+  const canView=v=>!user?FREE_VIEWS.includes(v):(full()||FREE_VIEWS.includes(v));
+  const canScn=k=>full()||FREE_SCN.includes(k);
+  function paywall(what){const st=status();$('payBody').innerHTML=`<h2 style="margin-top:0">🔒 ${st.k==='free'?'Tu prueba gratis terminó':'Función de la membresía'}</h2>
+    <div class="muted">Para usar ${what} activa la membresía de SimulaFrac.</div>
+    <div style="margin:14px 0"><span class="price">${SF_CONFIG.price}</span> <small class="muted">${SF_CONFIG.period} · cancela cuando quieras</small></div>
+    <ul class="perks"><li>Escenarios reales de Vaca Muerta (petróleo, gas y desafío)</li><li>Tus propios pozos desde la plantilla de datos</li><li>Bombas y mantenimiento: modelos SPM, émbolos, diagnóstico y órdenes</li><li>Plantillas, hoja de seguimiento y calculadoras</li><li>Historial de etapas y reportes</li></ul>
+    <button class="btn pri" style="width:100%;padding:12px;font-size:15px" id="paySub">Suscribirme con Mercado Pago</button>
+    <div class="muted" style="font-size:12px;margin-top:8px">${real?'Se abre el pago seguro de Mercado Pago. Al confirmar vuelves a la app con la membresía activa.':'⚙ Modo prueba: el pago es simulado, no se cobra nada.'}</div>
+    <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn" id="payClose">Ahora no</button></div>`;
+    $('ovPay').classList.remove('hidden');$('payClose').onclick=()=>$('ovPay').classList.add('hidden');$('paySub').onclick=subscribe;}
+  async function subscribe(){
+    if(real){try{const {data}=await sb.auth.getSession();const r=await fetch(SF_CONFIG.apiBase+'/api/subscribe',{method:'POST',headers:{Authorization:'Bearer '+data.session.access_token}});const j=await r.json();if(j.init_point)location.href=j.init_point;else toast('No se pudo iniciar el pago: '+(j.error||r.status),6000);}catch(e){toast('No se pudo conectar con el servidor de pagos.',6000);}return;}
+    if(!confirm('Modo prueba: ¿simular una suscripción pagada por 1 mes? (no se cobra nada)'))return;
+    const U=DB.users(),p=U[user.email];p.member_until=new Date(Date.now()+30*DAY).toISOString();p.member_status='authorized';DB.save(U);prof=p;
+    $('ovPay').classList.add('hidden');ui();openAcc();toast('⭐ Membresía activa. ¡Gracias!',5000);}
+  async function cancel(){if(!confirm('¿Cancelar la renovación? Sigues con acceso hasta el fin del período pagado.'))return;
+    if(real){const {data}=await sb.auth.getSession();await fetch(SF_CONFIG.apiBase+'/api/cancel',{method:'POST',headers:{Authorization:'Bearer '+data.session.access_token}});await getProf();}
+    else{const U=DB.users();U[user.email].member_status='cancelled';DB.save(U);prof=U[user.email];}ui();openAcc();}
+  function openAcc(){if(!user){$('ovAuth').classList.remove('hidden');return;}const st=status(),name=prof&&prof.name||(user.user_metadata&&user.user_metadata.name)||'';
+    const plan=st.k==='member'?`<span class="badge ok">⭐ Membresía activa</span><div class="muted" style="margin-top:6px">${st.cancel?'Cancelada: tienes acceso hasta':'Se renueva el'} <b>${fmtD(st.until)}</b>.</div>`:
+      st.k==='trial'?`<span class="badge ok">🎁 Prueba gratis</span><div class="muted" style="margin-top:6px">Te quedan <b>${st.left} día${st.left>1?'s':''}</b> (hasta el ${fmtD(st.until)}). Luego ${SF_CONFIG.price} ${SF_CONFIG.period}.</div>`:
+      `<span class="badge no">Plan gratis</span><div class="muted" style="margin-top:6px">Tienes el pozo escuela, la guía y la evaluación. Suscríbete para desbloquear todo.</div>`;
+    $('accBody').innerHTML=`<h2 style="margin-top:0">Mi cuenta</h2><div><b style="font-size:17px">${name}</b><div class="muted">${user.email}</div></div><div style="margin:14px 0">${plan}</div>
+      <div class="row" style="gap:8px;flex-wrap:wrap">${st.k!=='member'||st.cancel?`<button class="btn pri" id="accSub">${st.k==='member'?'Reactivar':'Suscribirme'} · ${SF_CONFIG.price} ${SF_CONFIG.period}</button>`:`<button class="btn" id="accCancel">Cancelar renovación</button>`}<button class="btn" id="accOut">Cerrar sesión</button><button class="btn" id="accClose" style="margin-left:auto">Cerrar</button></div>
+      ${real?'':'<div class="demoTag">⚙ Modo prueba: cuentas locales y pago simulado.</div>'}`;
+    $('ovAcc').classList.remove('hidden');$('accClose').onclick=()=>$('ovAcc').classList.add('hidden');$('accOut').onclick=logout;
+    if($('accSub'))$('accSub').onclick=()=>{$('ovAcc').classList.add('hidden');paywall('todas las funciones');};if($('accCancel'))$('accCancel').onclick=cancel;}
+  document.querySelectorAll('.auth .tabsA button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.auth .tabsA button').forEach(x=>x.classList.toggle('on',x===b));$('aReg').classList.toggle('hidden',b.dataset.a!=='reg');$('aLog').classList.toggle('hidden',b.dataset.a!=='log');err('');});
+  $('aRegGo').onclick=register;$('aLogGo').onclick=login;$('aForgot').onclick=forgot;$('accChip').onclick=()=>{const st=status();st.k==='free'?paywall('todas las funciones'):openAcc();};
+  ['aPass2','lPass'].forEach(i=>$(i).addEventListener('keydown',e=>{if(e.key==='Enter')(i==='lPass'?login:register)();}));
+  setInterval(()=>{if(user){const was=$('accChip').textContent;ui();}},60000);
+  return {load,canView,canScn,paywall,status,openAcc};})();
+ACC.load();
 
 /* ================= PALETA DE COLORES ================= */
 const THEMES={
